@@ -1,0 +1,51 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-[var(--color-border)]">
+  <div class="max-w-6xl mx-auto px-4 py-16 md:py-20">
+    <div class="grid grid-cols-12 gap-8">
+      <div class="col-span-12 md:col-span-4">
+        <a href="/" class="font-bold text-lg text-[var(--color-primary)]">PlainVitamins</a>
+        <p class="mt-2 text-sm text-[var(--color-text-secondary)]">
+          PlainVitamins provides free access to dietary supplement data from the NIH Dietary Supplement Label Database (DSLD).
+        </p>
+      </div>
+
+      <div class="col-span-6 md:col-span-2">
+        <h3 class="font-semibold text-sm text-[var(--color-text)] mb-3">Quick Links</h3>
+        <ul class="space-y-2 text-sm text-[var(--color-text-secondary)]">
+          <li><a href="/" class="hover:text-[var(--color-primary)]">Home</a></li>
+          <li><a href="/supplements/" class="hover:text-[var(--color-primary)]">Supplements</a></li>
+          <li><a href="/ingredients/" class="hover:text-[var(--color-primary)]">Ingredients</a></li>
+          <li><a href="/brands/" class="hover:text-[var(--color-primary)]">Brands</a></li>
+          <li><a href="/rankings/" class="hover:text-[var(--color-primary)]">Rankings</a></li>
+          <li><a href="/about" class="hover:text-[var(--color-primary)]">About</a></li>
+        </ul>
+      </div>
+
+      <div class="col-span-6 md:col-span-2">
+        <h3 class="font-semibold text-sm text-[var(--color-text)] mb-3">Legal</h3>
+        <ul class="space-y-2 text-sm text-[var(--color-text-secondary)]">
+          <li><a href="/privacy" class="hover:text-[var(--color-primary)]">Privacy Policy</a></li>
+          <li><a href="/terms" class="hover:text-[var(--color-primary)]">Terms of Use</a></li>
+        </ul>
+      </div>
+
+      <div class="col-span-12 md:col-span-4">
+        <h3 class="font-semibold text-sm text-[var(--color-text)] mb-3">Our Network</h3>
+        <ul class="space-y-2 text-sm text-[var(--color-text-secondary)]">
+          <li><a href="https://plainmeds.com" class="hover:text-[var(--color-primary)]" target="_blank" rel="noopener">PlainMeds — Drug Information</a></li>
+          <li><a href="https://plaindoctor.com" class="hover:text-[var(--color-primary)]" target="_blank" rel="noopener">PlainDoctor — Healthcare Providers</a></li>
+          <li><a href="https://plainhealthdata.com" class="hover:text-[var(--color-primary)]" target="_blank" rel="noopener">PlainHealth — Mortality Data</a></li>
+          <li><a href="https://getfoodfacts.com" class="hover:text-[var(--color-primary)]" target="_blank" rel="noopener">GetFoodFacts — Nutrition Data</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-12 pt-8 border-t border-[var(--color-border)] text-center text-sm text-[var(--color-text-secondary)]">
+      <p class="mb-2">PlainVitamins is a directory of publicly available dietary supplement data. It does not recommend supplements or provide medical advice.</p>
+      <p>&copy; {year} PlainVitamins. Data from NIH Dietary Supplement Label Database. Not affiliated with NIH or the federal government.</p>
+    </div>
+  </div>
+</footer>

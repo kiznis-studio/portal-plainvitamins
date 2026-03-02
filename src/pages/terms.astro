@@ -1,0 +1,41 @@
+---
+export const prerender = true;
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Terms of Use"
+  description="PlainVitamins terms of use — guidelines for using our dietary supplement directory."
+  breadcrumbs={[{ name: 'Home', href: '/' }, { name: 'Terms of Use' }]}
+>
+  <div class="max-w-3xl mx-auto px-4 py-12">
+    <h1 class="text-3xl font-bold mb-8">Terms of Use</h1>
+    <div class="prose max-w-none space-y-6 text-[var(--color-text-secondary)]">
+      <p><strong>Last updated:</strong> March 2026</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">Acceptance of Terms</h2>
+      <p>By accessing PlainVitamins, you agree to these terms of use. If you do not agree, please do not use the site.</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">Government Data Directory</h2>
+      <p>PlainVitamins is a directory of publicly available dietary supplement label information from the NIH Dietary Supplement Label Database (DSLD). We display factual data as published by the federal government.</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">No Medical Advice or Recommendations</h2>
+      <p><strong>PlainVitamins does not recommend supplements, provide medical advice, or make healthcare decisions on your behalf.</strong> Supplement data is sourced from product labels and may not reflect current formulations. Always consult a healthcare provider before starting any dietary supplement.</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">Data Accuracy</h2>
+      <p>Supplement information is sourced from the NIH DSLD, which collects label data from dietary supplement products. While we update our data regularly, information may not reflect the most current product formulations. Always verify supplement details with the manufacturer.</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">Disclaimer</h2>
+      <p>PlainVitamins is not affiliated with NIH, the FDA, the U.S. Department of Health and Human Services, or any government agency. We are an independent site that transforms publicly available government data into an accessible format.</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">Intellectual Property</h2>
+      <p>The underlying data is public domain (U.S. government work). The site design, code, and presentation are copyrighted.</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">Limitation of Liability</h2>
+      <p>PlainVitamins is provided "as is" without warranties of any kind. We are not liable for any decisions made based on information provided on this site. Do not use this site as a substitute for professional medical advice.</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">Contact</h2>
+      <p>For questions about these terms, contact us at legal@plainvitamins.com.</p>
+    </div>
+  </div>
+</Base>

@@ -1,0 +1,171 @@
+---
+import Base from '../layouts/Base.astro';
+import { getStats, getTopBrands, getMostCommonIngredients, PRODUCT_TYPES } from '../lib/db';
+
+const db = (Astro.locals as any).runtime.env.DB;
+
+const [stats, topBrands, topIngredients] = await Promise.all([
+  getStats(db),
+  getTopBrands(db, 6),
+  getMostCommonIngredients(db, 6),
+]);
+
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+const datasetSchema = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Dataset',
+  name: 'NIH Dietary Supplement Label Database (DSLD)',
+  description: 'Dietary supplement label data from the National Institutes of Health DSLD, including ingredients, brands, and product types.',
+  url: Astro.site?.href || 'https://plainvitamins.com',
+  creator: { '@type': 'Organization', name: 'National Institutes of Health' },
+  license: 'https://www.usa.gov/government-works',
+});
+
+const websiteSchema = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'PlainVitamins',
+  url: Astro.site?.href || 'https://plainvitamins.com',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${Astro.site?.href || 'https://plainvitamins.com'}supplements/?q={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
+  },
+});
+---
+
+<Base
+  title="PlainVitamins — Dietary Supplement Database from NIH DSLD"
+  description={`Browse ${fmt(stats.total_products)} dietary supplements, ${fmt(stats.ingredient_group_count)} ingredients, and ${fmt(stats.brand_count)} brands from the NIH DSLD database.`}
+>
+  <script type="application/ld+json" set:html={datasetSchema} />
+  <script type="application/ld+json" set:html={websiteSchema} />
+
+  <!-- Hero -->
+  <section class="border-b border-[var(--color-border)]">
+    <div class="max-w-6xl mx-auto px-4 py-16 md:py-24 text-center">
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">Dietary Supplement Database</h1>
+      <p class="text-lg md:text-xl text-[var(--color-text-secondary)] mb-8 max-w-2xl mx-auto">
+        Browse {fmt(stats.total_products)} supplements, {fmt(stats.ingredient_group_count)} ingredients, and {fmt(stats.brand_count)} brands from the NIH DSLD.
+      </p>
+
+      <form action="/supplements/" method="get" class="max-w-lg mx-auto">
+        <div class="relative">
+          <input
+            type="text"
+            name="q"
+            placeholder="Search supplements by name or brand..."
+            class="w-full h-12 pl-12 pr-4 text-base rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
+          />
+          <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+      </form>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12 max-w-3xl mx-auto">
+        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4">
+          <div class="text-2xl font-bold text-[var(--color-primary)]">{fmt(stats.total_products)}</div>
+          <div class="text-sm text-[var(--color-text-secondary)]">Total Products</div>
+        </div>
+        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4">
+          <div class="text-2xl font-bold text-[var(--color-primary)]">{fmt(stats.on_market)}</div>
+          <div class="text-sm text-[var(--color-text-secondary)]">On Market</div>
+        </div>
+        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4">
+          <div class="text-2xl font-bold text-[var(--color-primary)]">{fmt(stats.brand_count)}</div>
+          <div class="text-sm text-[var(--color-text-secondary)]">Brands</div>
+        </div>
+        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4">
+          <div class="text-2xl font-bold text-[var(--color-primary)]">{fmt(stats.ingredient_group_count)}</div>
+          <div class="text-sm text-[var(--color-text-secondary)]">Ingredients</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Types -->
+  <section class="max-w-6xl mx-auto px-4 py-12 md:py-16">
+    <h2 class="text-2xl font-bold mb-2">Browse by Type</h2>
+    <p class="text-[var(--color-text-secondary)] mb-8">Explore supplements across {PRODUCT_TYPES.length} categories.</p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {PRODUCT_TYPES.map(type => (
+        <a href={`/supplements/?type=${type.code}`} class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">{type.icon}</span>
+            <div>
+              <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors">{type.name}</div>
+              <div class="text-sm text-[var(--color-text-secondary)]">Browse products</div>
+            </div>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- Top Brands -->
+  <section class="border-t border-[var(--color-border)]">
+    <div class="max-w-6xl mx-auto px-4 py-12 md:py-16">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h2 class="text-2xl font-bold mb-2">Top Brands</h2>
+          <p class="text-[var(--color-text-secondary)]">Brands with the most products in the database.</p>
+        </div>
+        <a href="/brands/" class="text-sm font-medium text-[var(--color-primary)] hover:underline">View all &rarr;</a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {topBrands.map(brand => (
+          <a href={`/brand/${brand.slug}`} class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group">
+            <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors">{brand.name}</div>
+            <div class="text-sm text-[var(--color-text-secondary)] mt-1">
+              {brand.product_count} products &middot; {brand.on_market_count} on market
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Most Common Ingredients -->
+  <section class="border-t border-[var(--color-border)]">
+    <div class="max-w-6xl mx-auto px-4 py-12 md:py-16">
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h2 class="text-2xl font-bold mb-2">Most Common Ingredients</h2>
+          <p class="text-[var(--color-text-secondary)]">Ingredients found in the most supplement products.</p>
+        </div>
+        <a href="/ingredients/" class="text-sm font-medium text-[var(--color-primary)] hover:underline">View all &rarr;</a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {topIngredients.map(ig => (
+          <a href={`/ingredient/${ig.slug}`} class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group">
+            <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors">{ig.name}</div>
+            <div class="text-sm text-[var(--color-text-secondary)] mt-1">
+              Found in {fmt(ig.product_count)} products
+              {ig.category && <span> &middot; {ig.category}</span>}
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Disclaimer -->
+  <section class="border-t border-[var(--color-border)]">
+    <div class="max-w-3xl mx-auto px-4 py-8">
+      <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+        <p class="text-sm text-amber-800 dark:text-amber-200">
+          <strong>Disclaimer:</strong> Data from NIH Dietary Supplement Label Database (DSLD). PlainVitamins does not recommend supplements or provide medical advice. Always consult a healthcare provider before starting any supplement.
+        </p>
+      </div>
+    </div>
+  </section>
+</Base>

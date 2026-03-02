@@ -1,0 +1,192 @@
+---
+import Base from '../../layouts/Base.astro';
+import {
+  searchProducts,
+  getProductsByType,
+  getProductCountByType,
+  getNewestProducts,
+  getProductTypeName,
+  PRODUCT_TYPES,
+  type Product,
+} from '../../lib/db';
+
+const db = (Astro.locals as any).runtime.env.DB;
+
+const q = Astro.url.searchParams.get('q')?.trim() || '';
+const typeCode = Astro.url.searchParams.get('type')?.trim() || '';
+const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1'));
+const perPage = 50;
+const offset = (page - 1) * perPage;
+
+let products: Product[] = [];
+let totalCount = 0;
+let pageTitle = 'Browse Supplements';
+let pageDescription = 'Search and browse dietary supplements from the NIH DSLD database.';
+let showCategories = false;
+
+if (q) {
+  products = await searchProducts(db, q, 100);
+  totalCount = products.length;
+  pageTitle = `Search: "${q}"`;
+  pageDescription = `${totalCount} results for "${q}" in the NIH DSLD database.`;
+} else if (typeCode) {
+  const typeName = getProductTypeName(typeCode);
+  [products, totalCount] = await Promise.all([
+    getProductsByType(db, typeCode, perPage, offset),
+    getProductCountByType(db, typeCode),
+  ]);
+  pageTitle = `${typeName} Supplements`;
+  pageDescription = `Browse ${totalCount.toLocaleString('en-US')} ${typeName.toLowerCase()} supplements from the NIH DSLD database.`;
+} else {
+  products = await getNewestProducts(db, 20);
+  showCategories = true;
+  pageDescription = 'Browse dietary supplements by category or search the NIH DSLD database.';
+}
+
+const totalPages = Math.ceil(totalCount / perPage);
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+function buildUrl(params: Record<string, string>) {
+  const url = new URL(Astro.url);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v) url.searchParams.set(k, v);
+    else url.searchParams.delete(k);
+  });
+  return url.pathname + url.search;
+}
+
+const breadcrumbs = [
+  { name: 'Home', href: '/' },
+  ...(typeCode ? [{ name: 'Supplements', href: '/supplements/' }] : []),
+  { name: pageTitle },
+];
+---
+
+<Base title={pageTitle} description={pageDescription} breadcrumbs={breadcrumbs}>
+  <div class="max-w-6xl mx-auto px-4 py-8 md:py-12">
+    <h1 class="text-3xl font-bold mb-2">{pageTitle}</h1>
+
+    {q && (
+      <p class="text-[var(--color-text-secondary)] mb-6">
+        {totalCount} result{totalCount !== 1 ? 's' : ''} for &ldquo;{q}&rdquo;
+      </p>
+    )}
+
+    {typeCode && !q && (
+      <p class="text-[var(--color-text-secondary)] mb-6">
+        {fmt(totalCount)} products &middot; Page {page} of {totalPages}
+      </p>
+    )}
+
+    {!q && !typeCode && (
+      <p class="text-[var(--color-text-secondary)] mb-6">
+        Search supplements or browse by category.
+      </p>
+    )}
+
+    <!-- Search bar -->
+    <form action="/supplements/" method="get" class="mb-8">
+      <div class="relative max-w-lg">
+        <input
+          type="text"
+          name="q"
+          value={q}
+          placeholder="Search supplements by name or brand..."
+          class="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
+        />
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+    </form>
+
+    <!-- Category cards (default view) -->
+    {showCategories && (
+      <section class="mb-12">
+        <h2 class="text-xl font-semibold mb-4">Browse by Category</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {PRODUCT_TYPES.map(type => (
+            <a href={`/supplements/?type=${type.code}`} class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">{type.icon}</span>
+                <div>
+                  <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors">{type.name}</div>
+                  <div class="text-sm text-[var(--color-text-secondary)]">Browse products</div>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Product list -->
+    {products.length > 0 && (
+      <section>
+        {showCategories && <h2 class="text-xl font-semibold mb-4">Newest Supplements</h2>}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {products.map(product => (
+            <a href={`/supplement/${product.slug}`} class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors truncate">{product.name}</div>
+                  {product.brand && (
+                    <div class="text-sm text-[var(--color-text-secondary)] mt-1">{product.brand}</div>
+                  )}
+                  <div class="text-sm text-[var(--color-text-secondary)] mt-1">
+                    {product.ingredient_count} ingredient{product.ingredient_count !== 1 ? 's' : ''}
+                    {product.product_type && <span> &middot; {product.product_type}</span>}
+                  </div>
+                </div>
+                <span class:list={[
+                  'shrink-0 px-2 py-0.5 rounded-full text-xs font-medium',
+                  product.off_market
+                    ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                    : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+                ]}>
+                  {product.off_market ? 'Off Market' : 'On Market'}
+                </span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {!showCategories && products.length === 0 && (
+      <div class="text-center py-16">
+        <p class="text-lg text-[var(--color-text-secondary)]">No supplements found.</p>
+        <a href="/supplements/" class="inline-block mt-4 text-[var(--color-primary)] hover:underline">Browse all categories</a>
+      </div>
+    )}
+
+    <!-- Pagination -->
+    {typeCode && totalPages > 1 && (
+      <nav class="flex items-center justify-center gap-4 mt-10">
+        {page > 1 ? (
+          <a href={buildUrl({ type: typeCode, page: String(page - 1 === 1 ? '' : page - 1) })} class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors">
+            &larr; Previous
+          </a>
+        ) : (
+          <span class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium text-[var(--color-text-secondary)] opacity-50">
+            &larr; Previous
+          </span>
+        )}
+
+        <span class="text-sm text-[var(--color-text-secondary)]">
+          Page {page} of {totalPages}
+        </span>
+
+        {page < totalPages ? (
+          <a href={buildUrl({ type: typeCode, page: String(page + 1) })} class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors">
+            Next &rarr;
+          </a>
+        ) : (
+          <span class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium text-[var(--color-text-secondary)] opacity-50">
+            Next &rarr;
+          </span>
+        )}
+      </nav>
+    )}
+  </div>
+</Base>

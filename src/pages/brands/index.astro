@@ -1,0 +1,116 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getAllBrands, getBrandCount, searchBrands, type Brand } from '../../lib/db';
+
+const db = (Astro.locals as any).runtime.env.DB;
+
+const q = Astro.url.searchParams.get('q')?.trim() || '';
+const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1'));
+const perPage = 50;
+const offset = (page - 1) * perPage;
+
+let brands: Brand[] = [];
+let totalCount = 0;
+let pageTitle = 'Browse Brands';
+
+if (q) {
+  brands = await searchBrands(db, q, 100);
+  totalCount = brands.length;
+  pageTitle = `Search: "${q}"`;
+} else {
+  [brands, totalCount] = await Promise.all([
+    getAllBrands(db, perPage, offset),
+    getBrandCount(db),
+  ]);
+}
+
+const totalPages = Math.ceil(totalCount / perPage);
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+const breadcrumbs = [
+  { name: 'Home', href: '/' },
+  { name: 'Brands' },
+];
+---
+
+<Base
+  title={q ? `Brand Search: "${q}"` : 'Browse Supplement Brands'}
+  description={q ? `${totalCount} brands matching "${q}" in the NIH DSLD database.` : `Browse ${fmt(totalCount)} dietary supplement brands from the NIH DSLD database.`}
+  breadcrumbs={breadcrumbs}
+>
+  <div class="max-w-6xl mx-auto px-4 py-8 md:py-12">
+    <h1 class="text-3xl font-bold mb-2">{pageTitle}</h1>
+    <p class="text-[var(--color-text-secondary)] mb-6">
+      {q
+        ? `${totalCount} brand${totalCount !== 1 ? 's' : ''} matching "${q}"`
+        : `${fmt(totalCount)} supplement brands in the database.${totalPages > 1 ? ` Page ${page} of ${totalPages}.` : ''}`
+      }
+    </p>
+
+    <!-- Search bar -->
+    <form action="/brands/" method="get" class="mb-8">
+      <div class="relative max-w-lg">
+        <input
+          type="text"
+          name="q"
+          value={q}
+          placeholder="Search brands..."
+          class="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent"
+        />
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+    </form>
+
+    <!-- Brand list -->
+    {brands.length > 0 ? (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {brands.map(brand => (
+          <a href={`/brand/${brand.slug}`} class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group">
+            <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors">{brand.name}</div>
+            <div class="text-sm text-[var(--color-text-secondary)] mt-1">
+              {fmt(brand.product_count)} product{brand.product_count !== 1 ? 's' : ''}
+              &middot;
+              {fmt(brand.on_market_count)} on market
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-16">
+        <p class="text-lg text-[var(--color-text-secondary)]">No brands found.</p>
+        {q && <a href="/brands/" class="inline-block mt-4 text-[var(--color-primary)] hover:underline">Browse all brands</a>}
+      </div>
+    )}
+
+    <!-- Pagination (only for non-search) -->
+    {!q && totalPages > 1 && (
+      <nav class="flex items-center justify-center gap-4 mt-10">
+        {page > 1 ? (
+          <a href={`/brands/${page - 1 === 1 ? '' : `?page=${page - 1}`}`} class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors">
+            &larr; Previous
+          </a>
+        ) : (
+          <span class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium text-[var(--color-text-secondary)] opacity-50">
+            &larr; Previous
+          </span>
+        )}
+
+        <span class="text-sm text-[var(--color-text-secondary)]">
+          Page {page} of {totalPages}
+        </span>
+
+        {page < totalPages ? (
+          <a href={`/brands/?page=${page + 1}`} class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors">
+            Next &rarr;
+          </a>
+        ) : (
+          <span class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium text-[var(--color-text-secondary)] opacity-50">
+            Next &rarr;
+          </span>
+        )}
+      </nav>
+    )}
+  </div>
+</Base>

@@ -1,0 +1,20 @@
+---
+import Base from '../layouts/Base.astro';
+
+Astro.response.status = 404;
+---
+
+<Base title="Page Not Found" description="The page you're looking for doesn't exist.">
+  <div class="max-w-6xl mx-auto px-4 py-20 text-center">
+    <h1 class="text-6xl font-bold text-[var(--color-primary)] mb-4">404</h1>
+    <p class="text-xl text-[var(--color-text-secondary)] mb-8">The page you're looking for doesn't exist.</p>
+    <div class="flex flex-wrap items-center justify-center gap-4">
+      <a href="/" class="inline-flex items-center gap-2 px-6 py-3 bg-[var(--color-primary)] text-white rounded-lg font-medium hover:opacity-90 transition-opacity">
+        Go Home
+      </a>
+      <a href="/supplements/" class="inline-flex items-center gap-2 px-6 py-3 border border-[var(--color-border)] rounded-lg font-medium hover:bg-[var(--color-surface)] transition-colors">
+        Browse Supplements
+      </a>
+    </div>
+  </div>
+</Base>

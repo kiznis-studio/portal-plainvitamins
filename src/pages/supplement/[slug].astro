@@ -1,0 +1,221 @@
+---
+import Base from '../../layouts/Base.astro';
+import {
+  getProductBySlug,
+  getIngredients,
+  getProductsByType,
+  getProductTypeName,
+  formatDV,
+  PRODUCT_TYPES,
+  type Product,
+} from '../../lib/db';
+
+const db = (Astro.locals as any).runtime.env.DB;
+const { slug } = Astro.params;
+
+const product = await getProductBySlug(db, slug!);
+if (!product) return Astro.redirect('/404');
+
+const ingredients = await getIngredients(db, product.id);
+
+let relatedProducts: Product[] = [];
+if (product.product_type_code) {
+  const all = await getProductsByType(db, product.product_type_code, 7);
+  relatedProducts = all.filter(p => p.id !== product.id).slice(0, 6);
+}
+
+const typeName = product.product_type || 'Supplement';
+const typeInfo = PRODUCT_TYPES.find(t => t.code === product.product_type_code);
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+const productSchema = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.name,
+  brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
+  category: typeName,
+  description: `${product.name} by ${product.brand || 'Unknown'} — ${typeName} supplement with ${product.ingredient_count} ingredient${product.ingredient_count !== 1 ? 's' : ''}.`,
+});
+
+const breadcrumbs = [
+  { name: 'Home', href: '/' },
+  { name: 'Supplements', href: '/supplements/' },
+  { name: product.name },
+];
+---
+
+<Base
+  title={`${product.name} — Supplement Facts & Ingredients`}
+  description={`${product.name} by ${product.brand || 'Unknown'}. ${typeName} supplement with ${product.ingredient_count} ingredients. View full label data from the NIH DSLD.`}
+  breadcrumbs={breadcrumbs}
+>
+  <script type="application/ld+json" set:html={productSchema} />
+
+  <div class="max-w-6xl mx-auto px-4 py-8 md:py-12">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-start gap-3 mb-3">
+        <h1 class="text-2xl md:text-3xl font-bold">{product.name}</h1>
+        <span class:list={[
+          'shrink-0 mt-1 px-2 py-0.5 rounded-full text-xs font-medium',
+          product.off_market
+            ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+            : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+        ]}>
+          {product.off_market ? 'Off Market' : 'On Market'}
+        </span>
+      </div>
+
+      {product.brand && (
+        <p class="text-lg text-[var(--color-text-secondary)]">
+          by <a href={`/brand/${product.brand.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`} class="text-[var(--color-primary)] hover:underline">{product.brand}</a>
+        </p>
+      )}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Product Details -->
+      <div class="lg:col-span-1">
+        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6">
+          <h2 class="font-semibold mb-4">Product Details</h2>
+          <dl class="space-y-3 text-sm">
+            {product.product_type && (
+              <div>
+                <dt class="text-[var(--color-text-secondary)]">Type</dt>
+                <dd class="font-medium mt-0.5">
+                  <a href={`/supplements/?type=${product.product_type_code}`} class="text-[var(--color-primary)] hover:underline">
+                    {typeInfo && <span class="mr-1">{typeInfo.icon}</span>}
+                    {product.product_type}
+                  </a>
+                </dd>
+              </div>
+            )}
+            {product.physical_state && (
+              <div>
+                <dt class="text-[var(--color-text-secondary)]">Form</dt>
+                <dd class="font-medium mt-0.5">{product.physical_state}</dd>
+              </div>
+            )}
+            {product.serving_size && (
+              <div>
+                <dt class="text-[var(--color-text-secondary)]">Serving Size</dt>
+                <dd class="font-medium mt-0.5">{product.serving_size}</dd>
+              </div>
+            )}
+            {product.servings_per_container && (
+              <div>
+                <dt class="text-[var(--color-text-secondary)]">Servings Per Container</dt>
+                <dd class="font-medium mt-0.5">{product.servings_per_container}</dd>
+              </div>
+            )}
+            {product.entry_date && (
+              <div>
+                <dt class="text-[var(--color-text-secondary)]">Database Entry Date</dt>
+                <dd class="font-medium mt-0.5">{product.entry_date}</dd>
+              </div>
+            )}
+            <div>
+              <dt class="text-[var(--color-text-secondary)]">Ingredients</dt>
+              <dd class="font-medium mt-0.5">{product.ingredient_count}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <!-- Ingredients Table -->
+      <div class="lg:col-span-2">
+        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+          <div class="px-6 py-4 border-b border-[var(--color-border)]">
+            <h2 class="font-semibold">Supplement Facts ({ingredients.length} Ingredients)</h2>
+          </div>
+
+          {ingredients.length > 0 ? (
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b border-[var(--color-border)]">
+                    <th class="text-left px-6 py-3 font-medium text-[var(--color-text-secondary)]">Ingredient</th>
+                    <th class="text-left px-4 py-3 font-medium text-[var(--color-text-secondary)]">Group</th>
+                    <th class="text-right px-4 py-3 font-medium text-[var(--color-text-secondary)]">Amount</th>
+                    <th class="text-right px-6 py-3 font-medium text-[var(--color-text-secondary)]">% DV</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ingredients.map((ing, i) => (
+                    <tr class:list={['border-b border-[var(--color-border)] last:border-0', i % 2 === 0 ? '' : 'bg-[var(--color-bg)]']}>
+                      <td class="px-6 py-3 font-medium">{ing.name}</td>
+                      <td class="px-4 py-3 text-[var(--color-text-secondary)]">
+                        {ing.ingredient_group ? (
+                          <a href={`/ingredient/${ing.ingredient_group.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`} class="text-[var(--color-primary)] hover:underline">
+                            {ing.ingredient_group}
+                          </a>
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </td>
+                      <td class="px-4 py-3 text-right tabular-nums">
+                        {ing.quantity !== null ? `${ing.quantity} ${ing.unit || ''}`.trim() : '—'}
+                      </td>
+                      <td class="px-6 py-3 text-right tabular-nums">
+                        <span class:list={[
+                          ing.dv_pct !== null && ing.dv_pct >= 100
+                            ? 'font-semibold text-[var(--color-primary)]'
+                            : '',
+                        ]}>
+                          {formatDV(ing.dv_pct)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div class="px-6 py-8 text-center text-[var(--color-text-secondary)]">
+              No ingredient data available for this product.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Products -->
+    {relatedProducts.length > 0 && (
+      <section class="mt-12">
+        <h2 class="text-xl font-semibold mb-4">Related {typeName} Products</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {relatedProducts.map(rp => (
+            <a href={`/supplement/${rp.slug}`} class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors truncate">{rp.name}</div>
+                  {rp.brand && (
+                    <div class="text-sm text-[var(--color-text-secondary)] mt-1">{rp.brand}</div>
+                  )}
+                  <div class="text-sm text-[var(--color-text-secondary)] mt-1">
+                    {rp.ingredient_count} ingredient{rp.ingredient_count !== 1 ? 's' : ''}
+                  </div>
+                </div>
+                <span class:list={[
+                  'shrink-0 px-2 py-0.5 rounded-full text-xs font-medium',
+                  rp.off_market
+                    ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                    : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+                ]}>
+                  {rp.off_market ? 'Off' : 'On'}
+                </span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Disclaimer -->
+    <div class="mt-10 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+      <p class="text-sm text-amber-800 dark:text-amber-200">
+        <strong>Disclaimer:</strong> Label data from the NIH Dietary Supplement Label Database (DSLD). This information does not constitute medical advice. Consult a healthcare provider before starting any supplement.
+      </p>
+    </div>
+  </div>
+</Base>

@@ -1,0 +1,37 @@
+---
+interface Props {
+  type: 'website' | 'article';
+  title: string;
+  description: string;
+  url: string;
+  image?: string;
+  datePublished?: string;
+  dateModified?: string;
+  author?: string;
+  publisher?: { name: string };
+}
+
+const { type, title, description, url, image, datePublished, dateModified, author, publisher } = Astro.props;
+
+const schema: Record<string, unknown> = type === 'article' ? {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description,
+  url,
+  ...(image && { image }),
+  ...(datePublished && { datePublished }),
+  ...(dateModified && { dateModified }),
+  ...(author && { author: { '@type': 'Person', name: author } }),
+  ...(publisher && { publisher: { '@type': 'Organization', name: publisher.name } }),
+} : {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: title,
+  description,
+  url,
+  ...(publisher && { publisher: { '@type': 'Organization', name: publisher.name } }),
+};
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(schema)} />

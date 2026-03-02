@@ -1,0 +1,118 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getBrandBySlug, getProductsByBrand, type Product } from '../../lib/db';
+
+const db = (Astro.locals as any).runtime.env.DB;
+const { slug } = Astro.params;
+
+const brand = await getBrandBySlug(db, slug!);
+if (!brand) return Astro.redirect('/404');
+
+const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1'));
+const perPage = 50;
+const offset = (page - 1) * perPage;
+
+const products = await getProductsByBrand(db, brand.name, perPage, offset);
+const totalPages = Math.ceil(brand.product_count / perPage);
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+const breadcrumbs = [
+  { name: 'Home', href: '/' },
+  { name: 'Brands', href: '/brands/' },
+  { name: brand.name },
+];
+---
+
+<Base
+  title={`${brand.name} — Supplement Brand`}
+  description={`${brand.name} has ${fmt(brand.product_count)} dietary supplement products in the NIH DSLD database. ${fmt(brand.on_market_count)} currently on market.`}
+  breadcrumbs={breadcrumbs}
+>
+  <div class="max-w-6xl mx-auto px-4 py-8 md:py-12">
+    <h1 class="text-3xl font-bold mb-2">{brand.name}</h1>
+    <p class="text-[var(--color-text-secondary)] mb-8">
+      {fmt(brand.product_count)} product{brand.product_count !== 1 ? 's' : ''}
+      &middot;
+      {fmt(brand.on_market_count)} on market
+      {totalPages > 1 && <span> &middot; Page {page} of {totalPages}</span>}
+    </p>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+      <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4">
+        <div class="text-2xl font-bold text-[var(--color-primary)]">{fmt(brand.product_count)}</div>
+        <div class="text-sm text-[var(--color-text-secondary)]">Total Products</div>
+      </div>
+      <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4">
+        <div class="text-2xl font-bold text-[var(--color-primary)]">{fmt(brand.on_market_count)}</div>
+        <div class="text-sm text-[var(--color-text-secondary)]">On Market</div>
+      </div>
+      <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-4">
+        <div class="text-2xl font-bold text-[var(--color-text-secondary)]">{fmt(brand.product_count - brand.on_market_count)}</div>
+        <div class="text-sm text-[var(--color-text-secondary)]">Off Market</div>
+      </div>
+    </div>
+
+    <!-- Products list -->
+    <h2 class="text-xl font-semibold mb-4">Products by {brand.name}</h2>
+
+    {products.length > 0 ? (
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {products.map(product => (
+          <a href={`/supplement/${product.slug}`} class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors truncate">{product.name}</div>
+                <div class="text-sm text-[var(--color-text-secondary)] mt-1">
+                  {product.ingredient_count} ingredient{product.ingredient_count !== 1 ? 's' : ''}
+                  {product.product_type && <span> &middot; {product.product_type}</span>}
+                </div>
+              </div>
+              <span class:list={[
+                'shrink-0 px-2 py-0.5 rounded-full text-xs font-medium',
+                product.off_market
+                  ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                  : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+              ]}>
+                {product.off_market ? 'Off Market' : 'On Market'}
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-16">
+        <p class="text-lg text-[var(--color-text-secondary)]">No products found for this brand.</p>
+      </div>
+    )}
+
+    <!-- Pagination -->
+    {totalPages > 1 && (
+      <nav class="flex items-center justify-center gap-4 mt-10">
+        {page > 1 ? (
+          <a href={`/brand/${slug}${page - 1 === 1 ? '' : `?page=${page - 1}`}`} class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors">
+            &larr; Previous
+          </a>
+        ) : (
+          <span class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium text-[var(--color-text-secondary)] opacity-50">
+            &larr; Previous
+          </span>
+        )}
+
+        <span class="text-sm text-[var(--color-text-secondary)]">
+          Page {page} of {totalPages}
+        </span>
+
+        {page < totalPages ? (
+          <a href={`/brand/${slug}?page=${page + 1}`} class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors">
+            Next &rarr;
+          </a>
+        ) : (
+          <span class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium text-[var(--color-text-secondary)] opacity-50">
+            Next &rarr;
+          </span>
+        )}
+      </nav>
+    )}
+  </div>
+</Base>

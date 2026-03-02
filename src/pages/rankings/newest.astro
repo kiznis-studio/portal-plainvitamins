@@ -1,0 +1,59 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getNewestProducts, getProductTypeName } from '../../lib/db';
+
+const db = (Astro.locals as any).runtime.env.DB;
+const products = await getNewestProducts(db, 50);
+---
+
+<Base
+  title="Newest Dietary Supplements"
+  description="The 50 most recently added dietary supplements currently on the market, from the NIH DSLD database."
+  breadcrumbs={[
+    { name: 'Home', href: '/' },
+    { name: 'Rankings', href: '/rankings/' },
+    { name: 'Newest Supplements' },
+  ]}
+>
+  <div class="max-w-6xl mx-auto px-4 py-12 md:py-16">
+    <h1 class="text-3xl md:text-4xl font-bold mb-3">Newest Dietary Supplements</h1>
+    <p class="text-[var(--color-text-secondary)] text-lg mb-10">The 50 most recently added on-market dietary supplements in the NIH DSLD database.</p>
+
+    <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-[var(--color-surface)] border-b border-[var(--color-border)] text-left">
+              <th class="px-4 py-3 font-semibold w-12">#</th>
+              <th class="px-4 py-3 font-semibold">Product Name</th>
+              <th class="px-4 py-3 font-semibold">Brand</th>
+              <th class="px-4 py-3 font-semibold">Type</th>
+              <th class="px-4 py-3 font-semibold text-right">Entry Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((p, i) => (
+              <tr class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface)]/80">
+                <td class="px-4 py-3 text-[var(--color-text-secondary)]">{i + 1}</td>
+                <td class="px-4 py-3">
+                  <a href={`/supplement/${p.slug}`} class="text-[var(--color-primary)] hover:underline font-medium">
+                    {p.name}
+                  </a>
+                </td>
+                <td class="px-4 py-3 text-[var(--color-text-secondary)]">{p.brand || '\u2014'}</td>
+                <td class="px-4 py-3 text-[var(--color-text-secondary)]">
+                  {p.product_type_code ? getProductTypeName(p.product_type_code) : '\u2014'}
+                </td>
+                <td class="px-4 py-3 text-right text-[var(--color-text-secondary)] tabular-nums whitespace-nowrap">
+                  {p.entry_date || '\u2014'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="text-xs text-[var(--color-text-secondary)] mt-6">Source: NIH Dietary Supplement Label Database (DSLD). Sorted by entry date, showing on-market products only.</p>
+  </div>
+</Base>

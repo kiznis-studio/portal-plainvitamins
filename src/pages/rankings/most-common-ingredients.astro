@@ -1,0 +1,53 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getMostCommonIngredients, categoryLabel } from '../../lib/db';
+
+const db = (Astro.locals as any).runtime.env.DB;
+const ingredients = await getMostCommonIngredients(db, 50);
+---
+
+<Base
+  title="Most Common Supplement Ingredients"
+  description="Top 50 most common dietary supplement ingredients ranked by number of products. Based on NIH DSLD data."
+  breadcrumbs={[
+    { name: 'Home', href: '/' },
+    { name: 'Rankings', href: '/rankings/' },
+    { name: 'Most Common Ingredients' },
+  ]}
+>
+  <div class="max-w-6xl mx-auto px-4 py-12 md:py-16">
+    <h1 class="text-3xl md:text-4xl font-bold mb-3">Most Common Supplement Ingredients</h1>
+    <p class="text-[var(--color-text-secondary)] text-lg mb-10">The top 50 ingredients found most frequently across dietary supplements in the NIH DSLD database.</p>
+
+    <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-[var(--color-surface)] border-b border-[var(--color-border)] text-left">
+              <th class="px-4 py-3 font-semibold w-16">Rank</th>
+              <th class="px-4 py-3 font-semibold">Ingredient Name</th>
+              <th class="px-4 py-3 font-semibold">Category</th>
+              <th class="px-4 py-3 font-semibold text-right">Product Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ingredients.map((ing, i) => (
+              <tr class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface)]/80">
+                <td class="px-4 py-3 text-[var(--color-text-secondary)]">{i + 1}</td>
+                <td class="px-4 py-3">
+                  <a href={`/ingredient/${ing.slug}`} class="text-[var(--color-primary)] hover:underline font-medium">
+                    {ing.name}
+                  </a>
+                </td>
+                <td class="px-4 py-3 text-[var(--color-text-secondary)]">{categoryLabel(ing.category)}</td>
+                <td class="px-4 py-3 text-right tabular-nums">{ing.product_count.toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="text-xs text-[var(--color-text-secondary)] mt-6">Source: NIH Dietary Supplement Label Database (DSLD). Counts reflect total products listing each ingredient.</p>
+  </div>
+</Base>

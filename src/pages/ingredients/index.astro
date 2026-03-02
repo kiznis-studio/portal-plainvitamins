@@ -1,0 +1,105 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getAllIngredientGroups, getIngredientGroupCount, categoryLabel, type IngredientGroup } from '../../lib/db';
+
+const db = (Astro.locals as any).runtime.env.DB;
+
+const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1'));
+const perPage = 100;
+const offset = (page - 1) * perPage;
+
+const [allGroups, totalCount] = await Promise.all([
+  getAllIngredientGroups(db, perPage, offset),
+  getIngredientGroupCount(db),
+]);
+
+const totalPages = Math.ceil(totalCount / perPage);
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+// Group by category
+const byCategory = new Map<string, IngredientGroup[]>();
+for (const g of allGroups) {
+  const cat = categoryLabel(g.category);
+  if (!byCategory.has(cat)) byCategory.set(cat, []);
+  byCategory.get(cat)!.push(g);
+}
+const categories = Array.from(byCategory.entries()).sort((a, b) => {
+  // "Other" last
+  if (a[0] === 'Other') return 1;
+  if (b[0] === 'Other') return -1;
+  return a[0].localeCompare(b[0]);
+});
+
+const breadcrumbs = [
+  { name: 'Home', href: '/' },
+  { name: 'Ingredients' },
+];
+---
+
+<Base
+  title="Browse Ingredients — Dietary Supplement Ingredients"
+  description={`Browse ${fmt(totalCount)} dietary supplement ingredients from the NIH DSLD database. Explore vitamins, minerals, botanicals, and more.`}
+  breadcrumbs={breadcrumbs}
+>
+  <div class="max-w-6xl mx-auto px-4 py-8 md:py-12">
+    <h1 class="text-3xl font-bold mb-2">Browse Ingredients</h1>
+    <p class="text-[var(--color-text-secondary)] mb-8">
+      {fmt(totalCount)} ingredient groups found in dietary supplements.
+      {totalPages > 1 && <span>Page {page} of {totalPages}.</span>}
+    </p>
+
+    {categories.map(([cat, groups]) => (
+      <section class="mb-10">
+        <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+          {cat}
+          <span class="text-sm font-normal text-[var(--color-text-secondary)]">({groups.length})</span>
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {groups.map(ig => (
+            <a href={`/ingredient/${ig.slug}`} class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group">
+              <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors">{ig.name}</div>
+              <div class="text-sm text-[var(--color-text-secondary)] mt-1">
+                Found in {fmt(ig.product_count)} product{ig.product_count !== 1 ? 's' : ''}
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+
+    {allGroups.length === 0 && (
+      <div class="text-center py-16">
+        <p class="text-lg text-[var(--color-text-secondary)]">No ingredients found.</p>
+      </div>
+    )}
+
+    <!-- Pagination -->
+    {totalPages > 1 && (
+      <nav class="flex items-center justify-center gap-4 mt-10">
+        {page > 1 ? (
+          <a href={`/ingredients/${page - 1 === 1 ? '' : `?page=${page - 1}`}`} class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors">
+            &larr; Previous
+          </a>
+        ) : (
+          <span class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium text-[var(--color-text-secondary)] opacity-50">
+            &larr; Previous
+          </span>
+        )}
+
+        <span class="text-sm text-[var(--color-text-secondary)]">
+          Page {page} of {totalPages}
+        </span>
+
+        {page < totalPages ? (
+          <a href={`/ingredients/?page=${page + 1}`} class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors">
+            Next &rarr;
+          </a>
+        ) : (
+          <span class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium text-[var(--color-text-secondary)] opacity-50">
+            Next &rarr;
+          </span>
+        )}
+      </nav>
+    )}
+  </div>
+</Base>

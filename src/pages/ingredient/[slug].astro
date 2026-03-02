@@ -1,0 +1,112 @@
+---
+import Base from '../../layouts/Base.astro';
+import {
+  getIngredientGroupBySlug,
+  getProductsByIngredientGroup,
+  getProductCountByIngredientGroup,
+  categoryLabel,
+  type Product,
+} from '../../lib/db';
+
+const db = (Astro.locals as any).runtime.env.DB;
+const { slug } = Astro.params;
+
+const group = await getIngredientGroupBySlug(db, slug!);
+if (!group) return Astro.redirect('/404');
+
+const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') || '1'));
+const perPage = 50;
+const offset = (page - 1) * perPage;
+
+const [products, totalCount] = await Promise.all([
+  getProductsByIngredientGroup(db, group.name, perPage, offset),
+  getProductCountByIngredientGroup(db, group.name),
+]);
+
+const totalPages = Math.ceil(totalCount / perPage);
+const fmt = (n: number) => n.toLocaleString('en-US');
+
+const breadcrumbs = [
+  { name: 'Home', href: '/' },
+  { name: 'Ingredients', href: '/ingredients/' },
+  { name: group.name },
+];
+---
+
+<Base
+  title={`${group.name} — Supplement Ingredient`}
+  description={`${group.name} is found in ${fmt(group.product_count)} dietary supplement products. Browse all supplements containing ${group.name} from the NIH DSLD.`}
+  breadcrumbs={breadcrumbs}
+>
+  <div class="max-w-6xl mx-auto px-4 py-8 md:py-12">
+    <h1 class="text-3xl font-bold mb-2">{group.name}</h1>
+    <p class="text-[var(--color-text-secondary)] mb-8">
+      {group.category && <span>{categoryLabel(group.category)} &middot; </span>}
+      Found in {fmt(group.product_count)} supplement product{group.product_count !== 1 ? 's' : ''}
+      {totalPages > 1 && <span> &middot; Page {page} of {totalPages}</span>}
+    </p>
+
+    <!-- Products containing this ingredient -->
+    {products.length > 0 ? (
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {products.map(product => (
+          <a href={`/supplement/${product.slug}`} class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors truncate">{product.name}</div>
+                {product.brand && (
+                  <div class="text-sm text-[var(--color-text-secondary)] mt-1">{product.brand}</div>
+                )}
+                <div class="text-sm text-[var(--color-text-secondary)] mt-1">
+                  {product.ingredient_count} ingredient{product.ingredient_count !== 1 ? 's' : ''}
+                  {product.product_type && <span> &middot; {product.product_type}</span>}
+                </div>
+              </div>
+              <span class:list={[
+                'shrink-0 px-2 py-0.5 rounded-full text-xs font-medium',
+                product.off_market
+                  ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                  : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+              ]}>
+                {product.off_market ? 'Off Market' : 'On Market'}
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-16">
+        <p class="text-lg text-[var(--color-text-secondary)]">No products found containing this ingredient.</p>
+      </div>
+    )}
+
+    <!-- Pagination -->
+    {totalPages > 1 && (
+      <nav class="flex items-center justify-center gap-4 mt-10">
+        {page > 1 ? (
+          <a href={`/ingredient/${slug}${page - 1 === 1 ? '' : `?page=${page - 1}`}`} class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors">
+            &larr; Previous
+          </a>
+        ) : (
+          <span class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium text-[var(--color-text-secondary)] opacity-50">
+            &larr; Previous
+          </span>
+        )}
+
+        <span class="text-sm text-[var(--color-text-secondary)]">
+          Page {page} of {totalPages}
+        </span>
+
+        {page < totalPages ? (
+          <a href={`/ingredient/${slug}?page=${page + 1}`} class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium hover:border-[var(--color-primary)] transition-colors">
+            Next &rarr;
+          </a>
+        ) : (
+          <span class="px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-sm font-medium text-[var(--color-text-secondary)] opacity-50">
+            Next &rarr;
+          </span>
+        )}
+      </nav>
+    )}
+  </div>
+</Base>

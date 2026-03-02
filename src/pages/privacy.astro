@@ -1,0 +1,35 @@
+---
+export const prerender = true;
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Privacy Policy"
+  description="PlainVitamins privacy policy — how we handle your data and protect your privacy."
+  breadcrumbs={[{ name: 'Home', href: '/' }, { name: 'Privacy Policy' }]}
+>
+  <div class="max-w-3xl mx-auto px-4 py-12">
+    <h1 class="text-3xl font-bold mb-8">Privacy Policy</h1>
+    <div class="prose max-w-none space-y-6 text-[var(--color-text-secondary)]">
+      <p><strong>Last updated:</strong> March 2026</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">Information We Collect</h2>
+      <p>PlainVitamins uses Umami Analytics, a privacy-focused analytics tool that does not use cookies and does not collect personal information. We collect anonymous usage data including page views, referrer information, browser type, and country of origin.</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">How We Use Information</h2>
+      <p>Anonymous analytics data is used solely to understand how visitors use our site, improve content, and ensure the site functions properly.</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">Cookies</h2>
+      <p>PlainVitamins does not use tracking cookies. A local storage preference is used only to remember your light/dark theme choice.</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">Third-Party Services</h2>
+      <p>We use Cloudflare for hosting and content delivery. Cloudflare may collect minimal technical data as described in their privacy policy. We may also display advertisements via Google AdSense, which may use cookies for ad personalization.</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">Data Source</h2>
+      <p>All supplement data is sourced from the NIH Dietary Supplement Label Database (DSLD), a publicly available government dataset. We do not collect, store, or display any private health information.</p>
+
+      <h2 class="text-xl font-semibold text-[var(--color-text)]">Contact</h2>
+      <p>For privacy-related questions, contact us at privacy@plainvitamins.com.</p>
+    </div>
+  </div>
+</Base>

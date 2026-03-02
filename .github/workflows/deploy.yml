@@ -1,0 +1,55 @@
+name: Build & Deploy to Titan
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: kiznis-studio/portal-plainvitamins
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/kiznis-studio/portal-plainvitamins:latest
+            ghcr.io/kiznis-studio/portal-plainvitamins:${{ github.sha }}
+
+      - name: Deploy to Titan
+        env:
+          SSH_KEY: ${{ secrets.TITAN_SSH_KEY }}
+          TITAN_HOST: ${{ secrets.TITAN_HOST }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/titan_key
+          chmod 600 ~/.ssh/titan_key
+          ssh-keyscan -H "$TITAN_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          echo "$GHCR_TOKEN" | ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" \
+            'docker login ghcr.io -u github-actions --password-stdin && \
+             cd /opt/portals && \
+             docker pull ghcr.io/kiznis-studio/portal-plainvitamins:latest && \
+             docker compose up -d portal-plainvitamins && \
+             docker logout ghcr.io && \
+             echo "PlainVitamins deployed at $(date)"'
