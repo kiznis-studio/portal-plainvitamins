@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import AdSlot from '../../components/ads/AdSlot.astro';
 import {
   getProductBySlug,
   getIngredients,
@@ -178,6 +179,8 @@ const breadcrumbs = [
         </div>
       </div>
     </div>
+
+    <AdSlot slot="mid" />
 
     <!-- Related Products -->
     {relatedProducts.length > 0 && (

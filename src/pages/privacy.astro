@@ -1,35 +1,62 @@
 ---
-export const prerender = true;
 import Base from '../layouts/Base.astro';
 ---
 
-<Base
-  title="Privacy Policy"
-  description="PlainVitamins privacy policy — how we handle your data and protect your privacy."
-  breadcrumbs={[{ name: 'Home', href: '/' }, { name: 'Privacy Policy' }]}
->
-  <div class="max-w-3xl mx-auto px-4 py-12">
-    <h1 class="text-3xl font-bold mb-8">Privacy Policy</h1>
-    <div class="prose max-w-none space-y-6 text-[var(--color-text-secondary)]">
-      <p><strong>Last updated:</strong> March 2026</p>
+<Base title="Privacy Policy" description="PlainVitamins privacy policy — how we handle your data, cookies, and advertising."
+  breadcrumbs={[{ name: 'Home', href: '/' }, { name: 'Privacy Policy' }]}>
+  <section class="max-w-3xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-[var(--color-text)]">Privacy Policy</h1>
+    <p class="mt-2 text-xs text-[var(--color-text-secondary)]">Last updated: March 3, 2026</p>
 
-      <h2 class="text-xl font-semibold text-[var(--color-text)]">Information We Collect</h2>
-      <p>PlainVitamins uses Umami Analytics, a privacy-focused analytics tool that does not use cookies and does not collect personal information. We collect anonymous usage data including page views, referrer information, browser type, and country of origin.</p>
+    <div class="mt-6 space-y-4 text-sm text-[var(--color-text-secondary)] leading-relaxed">
+      <h2 class="text-lg font-bold text-[var(--color-text)]">Information We Collect</h2>
+      <p>PlainVitamins collects minimal data. We use privacy-focused analytics (Umami) that does not use cookies and does not collect personally identifiable information. We track page views, referral sources, and device types in aggregate form only.</p>
 
-      <h2 class="text-xl font-semibold text-[var(--color-text)]">How We Use Information</h2>
-      <p>Anonymous analytics data is used solely to understand how visitors use our site, improve content, and ensure the site functions properly.</p>
+      <h2 class="text-lg font-bold text-[var(--color-text)]">Cookies & Tracking Technologies</h2>
+      <p>PlainVitamins does not set first-party cookies. However, third-party services used on this site may set cookies:</p>
+      <ul class="list-disc pl-5 space-y-1">
+        <li><strong>Google AdSense</strong> uses cookies to serve ads based on your visits to this and other websites. Google's DoubleClick cookie enables it and its partners to serve ads based on your browsing patterns.</li>
+        <li><strong>Cloudflare</strong> may set security cookies (e.g., <code>__cf_bm</code>) to distinguish humans from bots.</li>
+      </ul>
+      <p>Your browser's light/dark theme preference is stored in localStorage, which never leaves your device.</p>
 
-      <h2 class="text-xl font-semibold text-[var(--color-text)]">Cookies</h2>
-      <p>PlainVitamins does not use tracking cookies. A local storage preference is used only to remember your light/dark theme choice.</p>
+      <h2 class="text-lg font-bold text-[var(--color-text)]">Advertising</h2>
+      <p>We display advertisements through <strong>Google AdSense</strong>. Google and its advertising partners may use cookies and web beacons to serve ads based on your prior visits to this and other websites. This includes:</p>
+      <ul class="list-disc pl-5 space-y-1">
+        <li>Google's use of the DoubleClick cookie for ad serving</li>
+        <li>Third-party vendors and ad networks serving ads on this site</li>
+      </ul>
+      <p>You can opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" class="text-[var(--color-primary)] hover:underline" target="_blank" rel="noopener">Google Ads Settings</a>. You can also opt out of third-party vendor cookies at <a href="https://optout.aboutads.info/" class="text-[var(--color-primary)] hover:underline" target="_blank" rel="noopener">aboutads.info</a>. For a full list of Google's ad technology providers, visit <a href="https://support.google.com/adsense/answer/9012903" class="text-[var(--color-primary)] hover:underline" target="_blank" rel="noopener">Google's ad technology providers page</a>.</p>
 
-      <h2 class="text-xl font-semibold text-[var(--color-text)]">Third-Party Services</h2>
-      <p>We use Cloudflare for hosting and content delivery. Cloudflare may collect minimal technical data as described in their privacy policy. We may also display advertisements via Google AdSense, which may use cookies for ad personalization.</p>
+      <h2 class="text-lg font-bold text-[var(--color-text)]">Data Sources</h2>
+      <p>All data displayed on this site comes from publicly available supplement data from the NIH Dietary Supplement Label Database (DSLD). No private or proprietary data is used. No personally identifiable information from these datasets is stored or displayed.</p>
 
-      <h2 class="text-xl font-semibold text-[var(--color-text)]">Data Source</h2>
-      <p>All supplement data is sourced from the NIH Dietary Supplement Label Database (DSLD), a publicly available government dataset. We do not collect, store, or display any private health information.</p>
+      <h2 class="text-lg font-bold text-[var(--color-text)]">Third-Party Services</h2>
+      <p>We use the following third-party services:</p>
+      <ul class="list-disc pl-5 space-y-1">
+        <li><strong>Cloudflare</strong> — CDN, security, and hosting</li>
+        <li><strong>Google AdSense</strong> — advertising (<a href="https://policies.google.com/privacy" class="text-[var(--color-primary)] hover:underline" target="_blank" rel="noopener">Google Privacy Policy</a>)</li>
+        <li><strong>Umami</strong> — privacy-focused, cookie-free analytics</li>
+      </ul>
 
-      <h2 class="text-xl font-semibold text-[var(--color-text)]">Contact</h2>
-      <p>For privacy-related questions, contact us at privacy@plainvitamins.com.</p>
+      <h2 class="text-lg font-bold text-[var(--color-text)]">Your Rights</h2>
+      <p>Under GDPR, CCPA, and similar privacy regulations, you have the right to:</p>
+      <ul class="list-disc pl-5 space-y-1">
+        <li>Know what data is collected about you</li>
+        <li>Request deletion of your data</li>
+        <li>Opt out of personalized advertising (see Advertising section above)</li>
+        <li>Use browser privacy features or ad blockers to limit tracking</li>
+      </ul>
+      <p>If you are in the European Economic Area (EEA), a consent dialog will be presented for personalized advertising in compliance with GDPR. California residents may opt out of the sale of personal information under CCPA.</p>
+
+      <h2 class="text-lg font-bold text-[var(--color-text)]">Children's Privacy</h2>
+      <p>PlainVitamins does not knowingly collect information from children under 13.</p>
+
+      <h2 class="text-lg font-bold text-[var(--color-text)]">Changes</h2>
+      <p>We may update this policy from time to time. Changes will be posted on this page with an updated date.</p>
+
+      <h2 class="text-lg font-bold text-[var(--color-text)]">Contact</h2>
+      <p>Questions about this privacy policy can be directed to <a href="mailto:privacy@plainvitamins.com" class="text-[var(--color-primary)] hover:underline">privacy@plainvitamins.com</a>.</p>
     </div>
-  </div>
+  </section>
 </Base>
