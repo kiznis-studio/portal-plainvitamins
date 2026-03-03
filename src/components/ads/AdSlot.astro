@@ -3,40 +3,26 @@ interface Props {
   slot: 'top' | 'mid' | 'bottom';
 }
 const { slot } = Astro.props;
-const adClient = import.meta.env.PUBLIC_ADSENSE_CLIENT;
 ---
 
-{adClient && (
-  <aside class:list={['ad-slot', `ad-slot-${slot}`]} aria-label="Advertisement">
-    <div class="ad-slot-inner">
-      <ins class="adsbygoogle"
-        style="display:block"
-        data-ad-client={adClient}
-        data-ad-slot=""
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      ></ins>
-      <script is:inline>
-        (adsbygoogle = window.adsbygoogle || []).push({});
-      </script>
-    </div>
-  </aside>
-)}
+<aside class:list={['ad-slot', `ad-slot-${slot}`]} aria-label="Advertisement">
+  <div class="ad-slot-inner">
+    <ins class="adsbygoogle"
+      style="display:block"
+      data-ad-client="ca-pub-7887321168925353"
+      data-ad-slot=""
+      data-ad-format="auto"
+      data-full-width-responsive="true"
+    ></ins>
+    <script is:inline>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+  </div>
+</aside>
 
 <style>
-  .ad-slot {
-    margin-block: 1.5rem;
-  }
-  .ad-slot-inner {
-    width: 100%;
-    max-width: 1200px;
-    margin-inline: auto;
-    padding-inline: 1rem;
-  }
-  @media (min-width: 640px) {
-    .ad-slot-inner { padding-inline: 1.5rem; }
-  }
-  @media (min-width: 1024px) {
-    .ad-slot-inner { padding-inline: 2rem; }
-  }
+  .ad-slot { margin-block: 1.5rem; }
+  .ad-slot-inner { width: 100%; max-width: 1200px; margin-inline: auto; padding-inline: 1rem; }
+  @media (min-width: 640px) { .ad-slot-inner { padding-inline: 1.5rem; } }
+  @media (min-width: 1024px) { .ad-slot-inner { padding-inline: 2rem; } }
 </style>
