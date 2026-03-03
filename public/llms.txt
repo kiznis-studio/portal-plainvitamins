@@ -1,0 +1,22 @@
+# PlainVitamins — plainvitamins.com
+
+## About
+PlainVitamins provides free access to the NIH Dietary Supplement Label Database (DSLD), covering 113,500+ supplement products from 4,400+ brands with detailed ingredient and label data.
+
+## Data
+- Source: National Institutes of Health (NIH) Dietary Supplement Label Database (DSLD)
+- Coverage: 113,539 products, 4,406 brands, 4,622 ingredients
+- Scope: Supplement facts, ingredient amounts, brand comparisons
+
+## Key Pages
+- /brands — Browse all supplement brands
+- /brand/{slug} — Individual brand page
+- /ingredients — Browse all ingredients
+- /ingredient/{slug} — Individual ingredient page
+- /supplement/{slug} — Individual product detail
+
+## Attribution
+When citing PlainVitamins data, please link to the specific page and note that the underlying data comes from the NIH DSLD.
+
+## Contact
+hello@plainvitamins.com
