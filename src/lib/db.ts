@@ -3,6 +3,14 @@
 
 import type { D1Database } from './d1-adapter';
 
+// --- Targeted query cache (permanent, for aggregate/listing queries) ---
+const queryCache = new Map<string, any>();
+export function getQueryCacheSize(): number { return queryCache.size; }
+function cached<T>(key: string, compute: () => Promise<T>): Promise<T> {
+  if (queryCache.has(key)) return Promise.resolve(queryCache.get(key) as T);
+  return compute().then(result => { queryCache.set(key, result); return result; });
+}
+
 // --- Interfaces ---
 
 export interface Product {
@@ -132,15 +140,19 @@ export async function getBrandBySlug(db: D1Database, slug: string): Promise<Bran
 }
 
 export async function getAllBrands(db: D1Database, limit = 100, offset = 0): Promise<Brand[]> {
-  const { results } = await db.prepare(
-    `SELECT * FROM brands ORDER BY product_count DESC, name COLLATE NOCASE LIMIT ? OFFSET ?`
-  ).bind(limit, offset).all<Brand>();
-  return results;
+  return cached(`brands:all:${limit}:${offset}`, async () => {
+    const { results } = await db.prepare(
+      `SELECT * FROM brands ORDER BY product_count DESC, name COLLATE NOCASE LIMIT ? OFFSET ?`
+    ).bind(limit, offset).all<Brand>();
+    return results;
+  });
 }
 
 export async function getBrandCount(db: D1Database): Promise<number> {
-  const row = await db.prepare(`SELECT COUNT(*) as cnt FROM brands`).first<{ cnt: number }>();
-  return row?.cnt || 0;
+  return cached('brands:count', async () => {
+    const row = await db.prepare(`SELECT COUNT(*) as cnt FROM brands`).first<{ cnt: number }>();
+    return row?.cnt || 0;
+  });
 }
 
 export async function searchBrands(db: D1Database, query: string, limit = 20): Promise<Brand[]> {
@@ -158,38 +170,48 @@ export async function getIngredientGroupBySlug(db: D1Database, slug: string): Pr
 }
 
 export async function getAllIngredientGroups(db: D1Database, limit = 100, offset = 0): Promise<IngredientGroup[]> {
-  const { results } = await db.prepare(
-    `SELECT * FROM ingredient_groups ORDER BY product_count DESC, name COLLATE NOCASE LIMIT ? OFFSET ?`
-  ).bind(limit, offset).all<IngredientGroup>();
-  return results;
+  return cached(`ingredient_groups:all:${limit}:${offset}`, async () => {
+    const { results } = await db.prepare(
+      `SELECT * FROM ingredient_groups ORDER BY product_count DESC, name COLLATE NOCASE LIMIT ? OFFSET ?`
+    ).bind(limit, offset).all<IngredientGroup>();
+    return results;
+  });
 }
 
 export async function getIngredientGroupCount(db: D1Database): Promise<number> {
-  const row = await db.prepare(`SELECT COUNT(*) as cnt FROM ingredient_groups`).first<{ cnt: number }>();
-  return row?.cnt || 0;
+  return cached('ingredient_groups:count', async () => {
+    const row = await db.prepare(`SELECT COUNT(*) as cnt FROM ingredient_groups`).first<{ cnt: number }>();
+    return row?.cnt || 0;
+  });
 }
 
 export async function getIngredientGroupsByCategory(db: D1Database, category: string): Promise<IngredientGroup[]> {
-  const { results } = await db.prepare(
-    `SELECT * FROM ingredient_groups WHERE category = ? ORDER BY product_count DESC, name COLLATE NOCASE`
-  ).bind(category).all<IngredientGroup>();
-  return results;
+  return cached(`ingredient_groups:category:${category}`, async () => {
+    const { results } = await db.prepare(
+      `SELECT * FROM ingredient_groups WHERE category = ? ORDER BY product_count DESC, name COLLATE NOCASE`
+    ).bind(category).all<IngredientGroup>();
+    return results;
+  });
 }
 
 // --- Rankings ---
 
 export async function getMostCommonIngredients(db: D1Database, limit = 50): Promise<IngredientGroup[]> {
-  const { results } = await db.prepare(
-    `SELECT * FROM ingredient_groups ORDER BY product_count DESC LIMIT ?`
-  ).bind(limit).all<IngredientGroup>();
-  return results;
+  return cached(`ingredient_groups:most_common:${limit}`, async () => {
+    const { results } = await db.prepare(
+      `SELECT * FROM ingredient_groups ORDER BY product_count DESC LIMIT ?`
+    ).bind(limit).all<IngredientGroup>();
+    return results;
+  });
 }
 
 export async function getTopBrands(db: D1Database, limit = 50): Promise<Brand[]> {
-  const { results } = await db.prepare(
-    `SELECT * FROM brands ORDER BY product_count DESC LIMIT ?`
-  ).bind(limit).all<Brand>();
-  return results;
+  return cached(`brands:top:${limit}`, async () => {
+    const { results } = await db.prepare(
+      `SELECT * FROM brands ORDER BY product_count DESC LIMIT ?`
+    ).bind(limit).all<Brand>();
+    return results;
+  });
 }
 
 export async function getNewestProducts(db: D1Database, limit = 50): Promise<Product[]> {
@@ -220,19 +242,21 @@ export function getProductTypeName(code: string): string {
 // --- Stats ---
 
 export async function getStats(db: D1Database) {
-  const total = await db.prepare(`SELECT COUNT(*) as c FROM products`).first<{ c: number }>();
-  const onMarket = await db.prepare(`SELECT COUNT(*) as c FROM products WHERE off_market = 0`).first<{ c: number }>();
-  const brands = await db.prepare(`SELECT COUNT(*) as c FROM brands`).first<{ c: number }>();
-  const ingredientGroups = await db.prepare(`SELECT COUNT(*) as c FROM ingredient_groups`).first<{ c: number }>();
-  const types = await db.prepare(`SELECT COUNT(DISTINCT product_type) as c FROM products`).first<{ c: number }>();
+  return cached('stats', async () => {
+    const total = await db.prepare(`SELECT COUNT(*) as c FROM products`).first<{ c: number }>();
+    const onMarket = await db.prepare(`SELECT COUNT(*) as c FROM products WHERE off_market = 0`).first<{ c: number }>();
+    const brands = await db.prepare(`SELECT COUNT(*) as c FROM brands`).first<{ c: number }>();
+    const ingredientGroups = await db.prepare(`SELECT COUNT(*) as c FROM ingredient_groups`).first<{ c: number }>();
+    const types = await db.prepare(`SELECT COUNT(DISTINCT product_type) as c FROM products`).first<{ c: number }>();
 
-  return {
-    total_products: total?.c || 0,
-    on_market: onMarket?.c || 0,
-    brand_count: brands?.c || 0,
-    ingredient_group_count: ingredientGroups?.c || 0,
-    type_count: types?.c || 0,
-  };
+    return {
+      total_products: total?.c || 0,
+      on_market: onMarket?.c || 0,
+      brand_count: brands?.c || 0,
+      ingredient_group_count: ingredientGroups?.c || 0,
+      type_count: types?.c || 0,
+    };
+  });
 }
 
 // --- Slugs (for sitemaps) ---

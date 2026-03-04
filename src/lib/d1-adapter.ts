@@ -85,9 +85,17 @@ function openDatabase(dbPath: string): InstanceType<typeof Database> {
 export function createD1Adapter(dbPath: string): D1Database {
   const db = openDatabase(dbPath);
 
+  const stmtCache = new Map<string, ReturnType<typeof db.prepare>>();
+  function getStmt(sql: string): ReturnType<typeof db.prepare> {
+    let s = stmtCache.get(sql);
+    if (!s) { s = db.prepare(sql); stmtCache.set(sql, s); }
+    return s;
+  }
+
   return {
     prepare(sql: string): D1PreparedStatement {
-      const stmt = db.prepare(normalizeParams(sql));
+      const normalized = normalizeParams(sql);
+      const stmt = getStmt(normalized);
 
       function makeBindResult(params: unknown[]) {
         return {

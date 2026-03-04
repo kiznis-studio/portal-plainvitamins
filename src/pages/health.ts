@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { inflightRequests, eventLoopLag, responseCache } from '../middleware';
+import { getQueryCacheSize } from '../lib/db';
 
 export const prerender = false;
 
@@ -31,7 +32,8 @@ export const GET: APIRoute = async ({ locals }) => {
     memMB: Math.round(mem.rss / 1048576),
     heapMB: Math.round(mem.heapUsed / 1048576),
     eventLoopLagMs: Math.round(eventLoopLag * 100) / 100,
-    cacheSize: responseCache.size,
+    responseCacheSize: responseCache.size,
+    queryCacheSize: getQueryCacheSize(),
     inflight: inflightRequests,
     dbs: dbResults,
   }), {

@@ -26,25 +26,13 @@ const lagInterval = setInterval(() => {
 }, 1000);
 lagInterval.unref();
 
-// --- In-memory response cache (5min TTL, 500 entries) ---
-const responseCache = new Map<string, { body: string; headers: Record<string, string>; expiry: number }>();
-const CACHE_TTL = 300_000;
-const MAX_CACHE_ENTRIES = 500;
-
-const cleanupInterval = setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of responseCache) {
-    if (now > entry.expiry) responseCache.delete(key);
-  }
-}, 600_000);
-cleanupInterval.unref();
+// --- In-memory response cache (permanent, 1500 entries) ---
+const responseCache = new Map<string, { body: string; headers: Record<string, string> }>();
+const MAX_CACHE_ENTRIES = 1500;
 
 function getCachedResponse(key: string): Response | null {
   const entry = responseCache.get(key);
-  if (!entry || Date.now() > entry.expiry) {
-    if (entry) responseCache.delete(key);
-    return null;
-  }
+  if (!entry) return null;
   return new Response(entry.body, {
     headers: { ...entry.headers, 'X-Cache': 'HIT' },
   });
@@ -55,7 +43,7 @@ function cacheResponse(key: string, body: string, headers: Record<string, string
     const firstKey = responseCache.keys().next().value;
     if (firstKey) responseCache.delete(firstKey);
   }
-  responseCache.set(key, { body, headers, expiry: Date.now() + CACHE_TTL });
+  responseCache.set(key, { body, headers });
 }
 
 export { inflightRequests, eventLoopLag, responseCache };
