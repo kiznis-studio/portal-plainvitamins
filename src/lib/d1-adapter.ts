@@ -5,7 +5,7 @@
 // Key difference: D1 uses numbered params (?1, ?2), better-sqlite3 only works with unnamed (?)
 
 import Database from 'better-sqlite3';
-import { copyFileSync, existsSync } from 'node:fs';
+import { copyFileSync, existsSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
 interface D1Result<T = unknown> {
@@ -34,6 +34,36 @@ function normalizeParams(sql: string): string {
   return sql.replace(/\?(\d+)/g, '?');
 }
 
+// Auto-tune SQLite pragmas based on DB file size.
+// Large DBs benefit from big mmap/cache; small DBs waste RAM with oversized buffers.
+function applyPragmas(db: InstanceType<typeof Database>, dbPath: string) {
+  let fileSizeMB = 0;
+  try { fileSizeMB = statSync(dbPath).size / (1024 * 1024); } catch { /* use default tier */ }
+
+  let cacheSize: number;  // negative = KB
+  let mmapSize: number;
+
+  if (fileSizeMB > 500) {        // getfoodfacts (2.8G), plaindoctor (2G), plaincharity (739M), namealmanac (548M)
+    cacheSize = -65536;           // 64MB page cache
+    mmapSize = 268435456;         // 256MB mmap
+  } else if (fileSizeMB > 100) { // plaincars (412M), plainvitamins (205M), plainrecalls (151M), plainhospital (129M), plainenviro (120M)
+    cacheSize = -32768;           // 32MB page cache
+    mmapSize = 134217728;         // 128MB mmap
+  } else if (fileSizeMB > 10) {  // plainworker (73M), plainschools (54M), wagedex (42M), plainzip (18M), etc.
+    cacheSize = -16384;           // 16MB page cache
+    mmapSize = 67108864;          // 64MB mmap
+  } else {                        // plaincrime (5M), plainrent (4.5M), plaincost (860K), etc.
+    cacheSize = -4096;            // 4MB page cache
+    mmapSize = 16777216;          // 16MB mmap
+  }
+
+  try {
+    db.pragma(`cache_size = ${cacheSize}`);
+    db.pragma(`mmap_size = ${mmapSize}`);
+    db.pragma('temp_store = MEMORY');
+  } catch { /* non-critical — defaults are fine */ }
+}
+
 // Self-heal WAL mode databases on read-only mounts.
 // WAL mode requires writing a WAL file even for reads, which fails on :ro mounts.
 // Fix: copy to /tmp, convert to DELETE journal mode, use the copy.
@@ -45,12 +75,8 @@ function openDatabase(dbPath: string): InstanceType<typeof Database> {
     // Try to force DELETE mode in case the DB is WAL but mount is writable
     try { db.pragma('journal_mode = DELETE'); } catch { /* :ro mount, expected */ }
 
-    // Performance pragmas — safe on :ro mounts (these are session-level, not persisted)
-    try {
-      db.pragma('cache_size = -65536');    // 64MB page cache (default ~2MB)
-      db.pragma('mmap_size = 268435456');  // 256MB mmap — OS page cache handles I/O
-      db.pragma('temp_store = MEMORY');    // Temp tables in RAM
-    } catch { /* non-critical — defaults are fine */ }
+    // Performance pragmas — auto-tuned to DB file size (session-level, not persisted)
+    applyPragmas(db, dbPath);
 
     return db;
   } catch (err: any) {
@@ -69,13 +95,9 @@ function openDatabase(dbPath: string): InstanceType<typeof Database> {
     fixDb.pragma('journal_mode = DELETE');
     fixDb.close();
 
-    // Now open as readonly with performance pragmas
+    // Now open as readonly with auto-tuned performance pragmas
     const db = new Database(tmpPath, { readonly: true });
-    try {
-      db.pragma('cache_size = -65536');
-      db.pragma('mmap_size = 268435456');
-      db.pragma('temp_store = MEMORY');
-    } catch { /* non-critical */ }
+    applyPragmas(db, dbPath);
 
     console.warn(`[d1-adapter] Self-healed: ${dbPath} → ${tmpPath} (journal_mode=DELETE)`);
     return db;
@@ -85,6 +107,7 @@ function openDatabase(dbPath: string): InstanceType<typeof Database> {
 export function createD1Adapter(dbPath: string): D1Database {
   const db = openDatabase(dbPath);
 
+  // Prepared statement cache — avoids recompiling SQL on every call
   const stmtCache = new Map<string, ReturnType<typeof db.prepare>>();
   function getStmt(sql: string): ReturnType<typeof db.prepare> {
     let s = stmtCache.get(sql);
