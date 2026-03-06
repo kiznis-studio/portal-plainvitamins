@@ -90,8 +90,27 @@ const breadcrumbSchema = (() => {
     </script>
 
     <script defer src="https://analytics.opspixel.com/script.js" data-website-id="83cbc541-1a1b-4642-85b0-5fd2dfa4b95f"></script>
+    <!-- Consent Mode v2 defaults — MUST come before any Google tags -->
+    <script is:inline>
+      window.dataLayer=window.dataLayer||[];
+      function gtag(){dataLayer.push(arguments)}
+      gtag('consent','default',{
+        'ad_storage':'denied',
+        'ad_user_data':'denied',
+        'ad_personalization':'denied',
+        'analytics_storage':'granted',
+        'wait_for_update':500
+      });
+      gtag('consent','default',{
+        'ad_storage':'granted',
+        'ad_user_data':'granted',
+        'ad_personalization':'granted',
+        'analytics_storage':'granted',
+        'region':['US']
+      });
+    </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-TCBQDSC2R0"></script>
-    <script is:inline>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-TCBQDSC2R0');</script>
+    <script is:inline>gtag('js',new Date());gtag('config','G-TCBQDSC2R0');</script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7887321168925353" crossorigin="anonymous"></script>
   </head>
   <body class="min-h-screen flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
