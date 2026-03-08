@@ -50,6 +50,9 @@ async function ensureWarmed(): Promise<void> {
   await warmingPromise;
 }
 
+// Start warming immediately at module load (before first healthcheck)
+ensureWarmed();
+
 // --- LRU response cache ---
 interface CacheEntry {
   body: string;
