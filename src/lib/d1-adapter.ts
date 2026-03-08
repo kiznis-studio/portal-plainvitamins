@@ -34,34 +34,35 @@ function normalizeParams(sql: string): string {
   return sql.replace(/\?(\d+)/g, '?');
 }
 
+// Exported metadata for health endpoint
+export const dbMeta = { mmapSize: 0, fileSizeBytes: 0 };
+
 // Auto-tune SQLite pragmas based on DB file size.
-// Large DBs benefit from big mmap/cache; small DBs waste RAM with oversized buffers.
+// mmap_size scales to full file size (virtual address space is free on 64-bit).
+// cache_size uses tiers (it's real RAM allocation).
 function applyPragmas(db: InstanceType<typeof Database>, dbPath: string) {
-  let fileSizeMB = 0;
-  try { fileSizeMB = statSync(dbPath).size / (1024 * 1024); } catch { /* use default tier */ }
+  let fileSize = 0;
+  try { fileSize = statSync(dbPath).size; } catch { /* use defaults */ }
 
-  let cacheSize: number;  // negative = KB
-  let mmapSize: number;
+  // cache_size: tiered by file size (negative = KB)
+  const fileSizeMB = fileSize / (1024 * 1024);
+  let cacheSize: number;
+  if (fileSizeMB > 500) cacheSize = -65536;       // 64MB
+  else if (fileSizeMB > 100) cacheSize = -32768;   // 32MB
+  else if (fileSizeMB > 10) cacheSize = -16384;    // 16MB
+  else cacheSize = -4096;                           // 4MB
 
-  if (fileSizeMB > 500) {        // getfoodfacts (2.8G), plaindoctor (2G), plaincharity (739M), namealmanac (548M)
-    cacheSize = -65536;           // 64MB page cache
-    mmapSize = 268435456;         // 256MB mmap
-  } else if (fileSizeMB > 100) { // plaincars (412M), plainvitamins (205M), plainrecalls (151M), plainhospital (129M), plainenviro (120M)
-    cacheSize = -32768;           // 32MB page cache
-    mmapSize = 134217728;         // 128MB mmap
-  } else if (fileSizeMB > 10) {  // plainworker (73M), plainschools (54M), wagedex (42M), plainzip (18M), etc.
-    cacheSize = -16384;           // 16MB page cache
-    mmapSize = 67108864;          // 64MB mmap
-  } else {                        // plaincrime (5M), plainrent (4.5M), plaincost (860K), etc.
-    cacheSize = -4096;            // 4MB page cache
-    mmapSize = 16777216;          // 16MB mmap
-  }
+  // mmap_size: scale to full DB file (virtual memory, not RAM)
+  const mmapSize = Math.max(fileSize, 16 * 1024 * 1024);
 
   try {
     db.pragma(`cache_size = ${cacheSize}`);
     db.pragma(`mmap_size = ${mmapSize}`);
     db.pragma('temp_store = MEMORY');
-  } catch { /* non-critical — defaults are fine */ }
+  } catch { /* non-critical */ }
+
+  dbMeta.mmapSize = mmapSize;
+  dbMeta.fileSizeBytes = fileSize;
 }
 
 // Self-heal WAL mode databases on read-only mounts.

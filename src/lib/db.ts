@@ -287,3 +287,16 @@ export function formatDV(pct: number | null): string {
   if (pct === null || pct === undefined) return '—';
   return `${Math.round(pct)}%`;
 }
+
+export async function warmQueryCache(db: D1Database): Promise<number> {
+  const start = Date.now();
+  await Promise.all([
+    getBrandCount(db),
+    getIngredientGroupCount(db),
+    getMostCommonIngredients(db),
+    getTopBrands(db),
+    getStats(db),
+  ]);
+  console.log(`[cache] Warmed ${queryCache.size} queries in ${Date.now() - start}ms`);
+  return queryCache.size;
+}
