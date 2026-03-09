@@ -52,6 +52,10 @@ jobs:
           scp -i ~/.ssh/titan_key docker-compose.titan.yml \
             "root@${TITAN_HOST}:/opt/portals/plainvitamins/"
 
+          # Remove old container if it exists from monolith compose (one-time migration)
+          ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" \
+            'docker stop portal-plainvitamins 2>/dev/null && docker rm portal-plainvitamins 2>/dev/null || true'
+
           # Pull image and restart with per-portal compose
           echo "$GHCR_TOKEN" | ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" \
             'docker login ghcr.io -u github-actions --password-stdin && \
