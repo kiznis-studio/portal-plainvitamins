@@ -46,10 +46,17 @@ jobs:
           chmod 600 ~/.ssh/titan_key
           ssh-keyscan -H "$TITAN_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
+          # Copy compose file to portal directory on Titan
+          ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" \
+            "mkdir -p /opt/portals/plainvitamins"
+          scp -i ~/.ssh/titan_key docker-compose.titan.yml \
+            "root@${TITAN_HOST}:/opt/portals/plainvitamins/"
+
+          # Pull image and restart with per-portal compose
           echo "$GHCR_TOKEN" | ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" \
             'docker login ghcr.io -u github-actions --password-stdin && \
-             cd /opt/portals && \
              docker pull ghcr.io/kiznis-studio/portal-plainvitamins:latest && \
-             docker compose up -d portal-plainvitamins && \
+             cd /opt/portals/plainvitamins && \
+             docker compose -f docker-compose.titan.yml up -d && \
              docker logout ghcr.io && \
              echo "PlainVitamins deployed at $(date)"'

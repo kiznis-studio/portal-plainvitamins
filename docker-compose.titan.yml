@@ -1,0 +1,21 @@
+services:
+  portal-plainvitamins:
+    image: ghcr.io/kiznis-studio/portal-plainvitamins:latest
+    container_name: portal-plainvitamins
+    restart: unless-stopped
+    volumes:
+      - /opt/portals/data/sqlite/plainvitamins.db:/data/portal.db:ro
+    environment:
+      - DATABASE_PATH=/data/portal.db
+      - HOST=0.0.0.0
+      - PORT=4321
+      - CACHE_ENTRIES=500
+    networks:
+      - portals
+    mem_limit: 512m
+    cpus: 0.5
+
+networks:
+  portals:
+    external: true
+    name: portals-net
