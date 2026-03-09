@@ -60,7 +60,7 @@ interface CacheEntry {
   hits: number;
 }
 const responseCache = new Map<string, CacheEntry>();
-const MAX_CACHE_ENTRIES = parseInt(process.env.CACHE_ENTRIES || '1500', 10);
+const MAX_CACHE_ENTRIES = parseInt(process.env.CACHE_ENTRIES || '500', 10);
 let totalHits = 0;
 let totalMisses = 0;
 
