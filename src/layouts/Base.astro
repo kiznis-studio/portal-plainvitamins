@@ -74,7 +74,7 @@ const breadcrumbSchema = (() => {
       type={props.article ? 'article' : 'website'}
       title={fullTitle}
       description={props.description}
-      url={Astro.url.href}
+      url={new URL(Astro.url.pathname, Astro.site).href}
       image={props.image}
       datePublished={props.publishedTime}
       dateModified={props.modifiedTime}
