@@ -251,6 +251,10 @@ async function main() {
     CREATE INDEX IF NOT EXISTS idx_ingredients_group ON ingredients(ingredient_group);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_brands_slug ON brands(slug);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_ingredient_groups_slug ON ingredient_groups(slug);
+    CREATE INDEX IF NOT EXISTS idx_products_brand_name ON products(brand, name COLLATE NOCASE);
+    CREATE INDEX IF NOT EXISTS idx_products_type_brand ON products(product_type_code, brand);
+    CREATE INDEX IF NOT EXISTS idx_ingredients_name ON ingredients(name COLLATE NOCASE);
+    CREATE INDEX IF NOT EXISTS idx_ingredients_group_product ON ingredients(ingredient_group, product_id);
   `);
 
   // Final stats
@@ -264,6 +268,12 @@ async function main() {
   };
   console.log('\n── Database Stats ──');
   for (const [k, v] of Object.entries(stats)) console.log(`  ${k}: ${v.toLocaleString()}`);
+
+  console.log('\nFinalizing database...');
+  db.exec('ANALYZE');
+  db.pragma('journal_mode = DELETE');
+  db.exec('VACUUM');
+  console.log('Finalized (ANALYZE + journal_mode=DELETE + VACUUM)');
 
   db.close();
   console.log(`\nDatabase: ${DB_PATH}`);

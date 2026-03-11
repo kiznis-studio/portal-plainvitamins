@@ -36,6 +36,12 @@ const productSchema = JSON.stringify({
   brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
   category: typeName,
   description: `${product.name} by ${product.brand || 'Unknown'} — ${typeName} supplement with ${product.ingredient_count} ingredient${product.ingredient_count !== 1 ? 's' : ''}.`,
+  offers: {
+    '@type': 'Offer',
+    availability: product.off_market
+      ? 'https://schema.org/Discontinued'
+      : 'https://schema.org/InStock',
+  },
 });
 
 const breadcrumbs = [
