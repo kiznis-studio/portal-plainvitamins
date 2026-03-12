@@ -2,3 +2,24 @@ User-agent: *
 Allow: /
 
 Sitemap: https://plainvitamins.com/sitemap-index.xml
+
+# AI Crawler Governance
+# Citation bots — ALLOWED (these link back to your content)
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# Training bots — BLOCKED (scrape for model training, no attribution)
+User-agent: GPTBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
