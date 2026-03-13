@@ -29,19 +29,14 @@ const typeName = product.product_type || 'Supplement';
 const typeInfo = PRODUCT_TYPES.find(t => t.code === product.product_type_code);
 const fmt = (n: number) => n.toLocaleString('en-US');
 
-const productSchema = JSON.stringify({
+const supplementSchema = JSON.stringify({
   '@context': 'https://schema.org',
-  '@type': 'Product',
-  name: product.name,
-  brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
-  category: typeName,
-  description: `${product.name} by ${product.brand || 'Unknown'} — ${typeName} supplement with ${product.ingredient_count} ingredient${product.ingredient_count !== 1 ? 's' : ''}.`,
-  offers: {
-    '@type': 'Offer',
-    availability: product.off_market
-      ? 'https://schema.org/Discontinued'
-      : 'https://schema.org/InStock',
-  },
+  '@type': 'Dataset',
+  name: `${product.name} — Supplement Label Data`,
+  description: `${product.name} by ${product.brand || 'Unknown'} — ${typeName} supplement with ${product.ingredient_count} ingredient${product.ingredient_count !== 1 ? 's' : ''}. Label data from the NIH Dietary Supplement Label Database (DSLD).`,
+  creator: { '@type': 'Organization', name: 'NIH Office of Dietary Supplements' },
+  license: 'https://ods.od.nih.gov/Research/Dietary_Supplement_Label_Database.aspx',
+  variableMeasured: ingredients.map(ing => ing.name).slice(0, 20).join(', '),
 });
 
 const breadcrumbs = [
@@ -56,7 +51,7 @@ const breadcrumbs = [
   description={`${product.name} by ${product.brand || 'Unknown'}. ${typeName} supplement with ${product.ingredient_count} ingredients. View full label data from the NIH DSLD.`}
   breadcrumbs={breadcrumbs}
 >
-  <script type="application/ld+json" set:html={productSchema} />
+  <script type="application/ld+json" set:html={supplementSchema} />
 
   <div class="max-w-6xl mx-auto px-4 py-8 md:py-12">
     <!-- Header -->
