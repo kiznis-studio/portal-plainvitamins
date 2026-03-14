@@ -92,18 +92,15 @@ const MAX_CACHE_ENTRIES = parseInt(process.env.CACHE_ENTRIES || '5000', 10);
 let totalHits = 0;
 let totalMisses = 0;
 
-function getCachedResponse(key: string, acceptsGzip: boolean): Response | null {
+function getCachedResponse(key: string): Response | null {
   const entry = responseCache.get(key);
   if (!entry) { totalMisses++; return null; }
   responseCache.delete(key);
   entry.hits++;
   responseCache.set(key, entry);
   totalHits++;
-  if (acceptsGzip) {
-    return new Response(entry.compressed, {
-      headers: { ...entry.headers, 'Content-Encoding': 'gzip', 'X-Cache': 'HIT' },
-    });
-  }
+  // Always decompress — Caddy/CF handle client compression
+  // (pre-compressed serving causes double-compression when Caddy gzips again)
   return new Response(gunzipSync(entry.compressed), {
     headers: { ...entry.headers, 'X-Cache': 'HIT' },
   });
@@ -173,8 +170,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (context.request.method === 'GET') {
     const cacheKey = path + context.url.search;
-    const acceptsGzip = (context.request.headers.get('accept-encoding') || '').includes('gzip');
-    const cached = getCachedResponse(cacheKey, acceptsGzip);
+    const cached = getCachedResponse(cacheKey);
     if (cached) return cached;
 
     const ua = context.request.headers.get('user-agent') || '';
@@ -218,15 +214,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
             'Cache-Control': `public, max-age=300, s-maxage=${ttl}`,
           };
           cacheResponse(cacheKey, body, headers);
-          // Serve response (compressed if client accepts)
-          if (acceptsGzip) {
-            const entry = responseCache.get(cacheKey);
-            if (entry) {
-              return new Response(entry.compressed, {
-                headers: { ...headers, 'Content-Encoding': 'gzip', 'X-Cache': 'MISS' },
-              });
-            }
-          }
+          // MISS: always serve uncompressed — Caddy/CF handle compression
+          // (serving pre-gzipped buffers causes double-compression issues)
           return new Response(body, { headers: { ...headers, 'X-Cache': 'MISS' } });
         }
       }
