@@ -26,8 +26,6 @@ WORKDIR /app
 COPY --from=builder --chown=app:app /app/dist ./dist
 COPY --from=builder --chown=app:app /app/node_modules ./node_modules
 COPY --from=builder --chown=app:app /app/package.json ./
-# Copy runtime assets (fonts for OG images, etc.) — Astro SSR reads these at runtime
-COPY --from=builder --chown=app:app /app/src/assets ./src/assets
 COPY --chown=app:app cluster-entry.mjs ./
 USER app
 ENV HOST=0.0.0.0
