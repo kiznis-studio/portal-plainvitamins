@@ -1,0 +1,63 @@
+---
+export const prerender = false;
+import Base from '../../layouts/Base.astro';
+
+const guides = [
+  {
+    slug: 'understanding-supplement-labels',
+    title: 'How to Read a Supplement Facts Panel',
+    description: "What every line of a supplement label means, how Daily Value percentages work, and how supplement labels differ from food nutrition facts.",
+  },
+  {
+    slug: 'supplement-safety-basics',
+    title: 'Supplement Safety Basics: What FDA Oversight Really Covers',
+    description: 'How the FDA regulates dietary supplements versus drugs, common quality concerns, and what the NIH DSLD data reveals about the industry.',
+  },
+  {
+    slug: 'comparing-supplements-with-data',
+    title: 'How to Compare Supplements Using NIH Data',
+    description: 'A practical guide to using government label data to evaluate brands, check ingredient amounts, and identify quality indicators.',
+  },
+];
+---
+
+<Base
+  title="Dietary Supplement Guides — PlainVitamins"
+  description="Educational guides on reading supplement labels, understanding FDA regulation, and comparing brands using NIH Dietary Supplement Label Database data."
+  breadcrumbs={[{ name: 'Home', href: '/' }, { name: 'Guides' }]}
+>
+  <div class="mx-auto max-w-4xl px-4 py-8 md:py-12">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3">Dietary Supplement Guides</h1>
+    <p class="text-gray-600 dark:text-gray-400 mb-4 max-w-2xl">
+      Educational resources on supplement labels, regulatory oversight, and how to use NIH government data to make informed comparisons.
+    </p>
+    <p class="text-sm text-gray-500 dark:text-gray-500 mb-8">
+      All guides reference the NIH Dietary Supplement Label Database (DSLD) covering 113,539 products, 4,406 brands, and 4,622 ingredients.
+    </p>
+
+    <div class="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 mb-8">
+      <p class="text-sm text-amber-800 dark:text-amber-200">
+        <strong>Disclaimer:</strong> This content is for informational purposes only and does not constitute medical advice. Consult a healthcare provider before starting any supplement.
+      </p>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {guides.map(guide => (
+        <a href={`/guides/${guide.slug}`} class="block p-6 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-emerald-400 dark:hover:border-emerald-500 transition-colors">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{guide.title}</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{guide.description}</p>
+        </a>
+      ))}
+    </div>
+
+    <div class="mt-10 pt-8 border-t border-gray-200 dark:border-gray-700">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">Explore the Database</h2>
+      <div class="flex flex-wrap gap-3 text-sm">
+        <a href="/supplements/" class="text-emerald-600 dark:text-emerald-400 hover:underline">Browse All Supplements &rarr;</a>
+        <a href="/brands/" class="text-emerald-600 dark:text-emerald-400 hover:underline">Browse Brands &rarr;</a>
+        <a href="/ingredients/" class="text-emerald-600 dark:text-emerald-400 hover:underline">Browse Ingredients &rarr;</a>
+        <a href="/rankings/" class="text-emerald-600 dark:text-emerald-400 hover:underline">Rankings &rarr;</a>
+      </div>
+    </div>
+  </div>
+</Base>

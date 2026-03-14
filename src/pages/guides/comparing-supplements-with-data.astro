@@ -1,0 +1,168 @@
+---
+export const prerender = false;
+import Base from '../../layouts/Base.astro';
+
+const faqItems = [
+  {
+    q: 'What is the NIH Dietary Supplement Label Database (DSLD)?',
+    a: 'The NIH DSLD is a publicly accessible database maintained by the National Institutes of Health Office of Dietary Supplements. It contains label information — ingredients, amounts, serving sizes, brand names, and market status — for dietary supplement products sold in the United States. As of the current dataset used by PlainVitamins, it covers 113,539 products, 4,406 brands, and 4,622 ingredients. The database is designed to support research and consumer education, not to evaluate product safety or effectiveness.',
+  },
+  {
+    q: 'How do I compare two products with different serving sizes?',
+    a: 'Always normalize to a common unit before comparing. If Product A contains 500 mg of vitamin C per 2 capsules and Product B contains 250 mg per 1 capsule, the per-serving amounts look different but the per-capsule dose is identical. Calculate cost per milligram (or per IU, per CFU, etc.) rather than cost per serving or cost per bottle. On PlainVitamins, ingredient amounts are shown as declared per serving — always check the serving size field when making comparisons.',
+  },
+  {
+    q: 'Can I trust that the amounts on the label are accurate?',
+    a: 'The NIH DSLD records what manufacturers declare on labels, not independently verified content. Third-party research has found that some products contain significantly more or less of an ingredient than the label claims — particularly for botanical extracts, fish oil, and probiotics. For high-stakes decisions, look for products with third-party verification (NSF, USP, Informed Sport) in addition to reviewing DSLD label data. The DSLD is most reliable for comparing label claims systematically across many products.',
+  },
+  {
+    q: 'What does "on market" vs. "off market" mean in the DSLD?',
+    a: 'The DSLD tracks whether a product is currently marketed (on market) or has been discontinued (off market). On-market status reflects whether the product is actively being sold as of the last database update, based on information from manufacturers and label submissions. Off-market products remain in the database for research continuity. When using PlainVitamins to find a supplement, filtering to on-market products helps identify currently available options.',
+  },
+  {
+    q: 'How do I use ingredient data to compare brands?',
+    a: 'Start with the ingredient page for the specific compound you are researching (e.g., magnesium, omega-3, vitamin D). This shows all products containing that ingredient, the amount per serving across products, and which brands offer it. You can then compare: total amount per serving, chemical form of the ingredient (which affects bioavailability), serving size (capsules, softgels, tablets), whether the ingredient is standalone or part of a multi-ingredient formula, and the brand\'s total product catalog size in the database.',
+  },
+  {
+    q: 'Are rankings on PlainVitamins based on quality?',
+    a: 'No. Rankings on PlainVitamins are based on data quantity — for example, which brands have the most products in the NIH DSLD, or which ingredients appear in the most products. These are factual database metrics, not quality assessments. A brand with many products in the database is simply a brand with many labeled products catalogued by NIH — this does not imply better or worse quality. PlainVitamins does not rate, recommend, or endorse any supplement product or brand.',
+  },
+];
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqItems.map(item => ({
+    "@type": "Question",
+    "name": item.q,
+    "acceptedAnswer": { "@type": "Answer", "text": item.a },
+  })),
+};
+
+const articleSchema = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "How to Compare Supplements Using NIH Data",
+  "description": "A practical guide to using the NIH Dietary Supplement Label Database to compare brands, evaluate ingredient amounts, and identify quality indicators across 113,539 supplement products.",
+  "publisher": { "@type": "Organization", "name": "PlainVitamins" },
+  "url": "https://plainvitamins.com/guides/comparing-supplements-with-data",
+};
+---
+
+<Base
+  title="How to Compare Supplements Using NIH Data — PlainVitamins"
+  description="A practical guide to using the NIH Dietary Supplement Label Database to compare brands, evaluate ingredient amounts, and identify quality indicators across 113,539 products."
+  breadcrumbs={[{ name: 'Home', href: '/' }, { name: 'Guides', href: '/guides/' }, { name: 'Comparing Supplements with Data' }]}
+>
+  <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+
+  <article class="mx-auto max-w-3xl px-4 py-8 md:py-12">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">How to Compare Supplements Using NIH Data</h1>
+    <p class="text-lg text-gray-500 dark:text-gray-400 mb-8">A practical guide to using government label data to evaluate brands, check ingredient amounts, and apply quality indicators — based on the NIH Dietary Supplement Label Database.</p>
+
+    <div class="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 mb-8">
+      <p class="font-semibold text-amber-800 dark:text-amber-200 mb-1">Key Takeaway</p>
+      <p class="text-sm text-amber-700 dark:text-amber-300">
+        The NIH DSLD gives you standardized label data for 113,539 products — making it the most comprehensive public source for supplement comparison. Use it to verify what a product claims to contain, compare ingredient amounts across brands after normalizing for serving size, and check a brand's full product catalog. Label data alone cannot confirm actual content — pair DSLD data with third-party certification information for the most complete picture.
+      </p>
+    </div>
+
+    <div class="prose dark:prose-invert max-w-none space-y-6">
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Start with the Ingredient, Not the Brand</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">The most effective way to use DSLD data is to research the specific ingredient you need, then find products that contain it — rather than starting with a brand and hoping it has what you want. PlainVitamins organizes the NIH DSLD by ingredient, so you can browse <a href="/ingredients/" class="text-emerald-600 dark:text-emerald-400 hover:underline">all 4,622 ingredients</a> and see every product that includes each one.</p>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">On each ingredient page, you can see: how many products contain it, the range of amounts per serving found across those products, and which brands offer it. This lets you quickly identify whether a specific dose is typical or unusually high or low for that ingredient in the market.</p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">How to Normalize for Serving Size</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">The single most common mistake when comparing supplements is ignoring serving size. Two products may list different milligram amounts, but if one serving is 1 capsule and another is 3 capsules, the per-capsule dose may be identical.</p>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">To compare correctly:</p>
+        <ol class="list-decimal pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+          <li>Identify the ingredient amount per serving in both products.</li>
+          <li>Check the serving size (number of capsules, softgels, tablets, or scoops).</li>
+          <li>Calculate the amount per single unit (capsule/tablet/softgel) by dividing amount per serving by units per serving.</li>
+          <li>Compare cost per milligram (or per IU, CFU, etc.) rather than cost per bottle or per serving.</li>
+        </ol>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">This arithmetic is especially important for products where servings range from 1 to 6 units. Browse the <a href="/supplements/" class="text-emerald-600 dark:text-emerald-400 hover:underline">supplements database</a> and check serving size carefully on every product page.</p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Evaluating Ingredient Forms</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">The chemical form of an ingredient affects how well your body absorbs it (bioavailability). DSLD label data often includes the form as declared by the manufacturer. Some notable differences:</p>
+        <ul class="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+          <li><strong class="text-gray-900 dark:text-gray-100">Magnesium:</strong> Magnesium oxide is the most common form in supplements and is cheapest to manufacture, but has lower absorption than magnesium glycinate, citrate, or malate. Labels listing only "magnesium" without specifying the form often contain oxide.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Vitamin B12:</strong> Methylcobalamin and adenosylcobalamin are the active forms used directly by the body. Cyanocobalamin is a synthetic form that requires conversion. Both are widely used; research on differences in humans is ongoing.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Folate:</strong> Methylfolate (5-MTHF) is the active form, relevant for people with MTHFR gene variants. Folic acid is the synthetic form. Labels distinguish these if the manufacturer specifies them.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Omega-3s:</strong> Fish oil triglyceride form vs. ethyl ester form — triglyceride form generally has better absorption with food. EPA and DHA amounts (not total fish oil weight) are what matter for dosing.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Using Brand Data to Evaluate Product Catalogs</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">The <a href="/brands/" class="text-emerald-600 dark:text-emerald-400 hover:underline">brand pages</a> on PlainVitamins show each brand's full catalog in the DSLD — how many products they have listed, how many are currently on market, and the range of categories they cover. This data is useful for:</p>
+        <ul class="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+          <li>Checking whether a brand you've found is a specialist (e.g., focused only on probiotics) or a generalist with hundreds of products across categories.</li>
+          <li>Verifying that a product is currently on market rather than discontinued.</li>
+          <li>Finding other products from the same manufacturer to compare formulations across their line.</li>
+        </ul>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">Brand catalog size in the DSLD is not a quality metric — it reflects how many products have submitted labels to the NIH database, which varies by company size and policy, not product quality.</p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Quality Indicators Beyond Label Data</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">The DSLD records what labels say. For independent verification of actual content, look for these quality signals in addition to DSLD data:</p>
+        <ul class="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+          <li><strong class="text-gray-900 dark:text-gray-100">Certificate of Analysis (COA):</strong> A document from a testing lab confirming that a specific batch meets label specifications. Reputable brands make COAs available on request or on their website.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Third-party certification seals:</strong> NSF Certified for Sport, USP Verified, Informed Sport, or Banned Substances Control Group (BSCG) seals indicate independent batch testing.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">GMP compliance:</strong> FDA GMP regulations (21 CFR Part 111) require manufacturers to test raw ingredients and finished products. GMP certification from NSF, NPA, or similar bodies confirms third-party auditing.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Transparent manufacturing disclosures:</strong> Products that disclose the manufacturing facility and country of origin for ingredients allow for deeper verification.</li>
+        </ul>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">You can also review the <a href="/guides/supplement-safety-basics" class="text-emerald-600 dark:text-emerald-400 hover:underline">supplement safety basics guide</a> for more on what FDA oversight covers and does not cover.</p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">A Step-by-Step Comparison Workflow</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">Here is a practical process for using PlainVitamins data to compare supplements:</p>
+        <ol class="list-decimal pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+          <li>Go to the <a href="/ingredients/" class="text-emerald-600 dark:text-emerald-400 hover:underline">Ingredients</a> page and find the ingredient you need.</li>
+          <li>Note the range of amounts per serving across products — is your candidate product low, average, or high for that ingredient?</li>
+          <li>Check the ingredient form disclosed on the label (e.g., magnesium glycinate vs. magnesium oxide).</li>
+          <li>Open the product page and review the full ingredient list — is this ingredient standalone or part of a multi-ingredient formula?</li>
+          <li>Check the serving size and calculate the per-unit dose and cost-per-milligram.</li>
+          <li>Visit the <a href="/brands/" class="text-emerald-600 dark:text-emerald-400 hover:underline">brand page</a> to see the full catalog and on-market status.</li>
+          <li>Look up the brand externally for third-party certifications (NSF, USP) and available COAs.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Frequently Asked Questions</h2>
+        <div class="not-prose space-y-3">
+          {faqItems.map(item => (
+            <details class="group border border-gray-200 dark:border-gray-700 rounded-lg">
+              <summary class="cursor-pointer px-4 py-3 font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800">{item.q}</summary>
+              <p class="px-4 pb-4 text-gray-600 dark:text-gray-400 leading-relaxed">{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Sources</h2>
+        <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+          <li>NIH Office of Dietary Supplements — Dietary Supplement Label Database (DSLD), dsld.od.nih.gov</li>
+          <li>NIH ODS — Dietary Supplement Fact Sheets (ods.od.nih.gov)</li>
+          <li>FDA — 21 CFR Part 101.36: Nutrition labeling of dietary supplements</li>
+          <li>NSF International — Certified for Sport Program (nsf.org)</li>
+          <li>US Pharmacopeia — USP Dietary Supplement Verification Program (usp.org)</li>
+        </ul>
+      </section>
+
+      <p class="text-xs italic text-gray-500 border-t border-gray-200 dark:border-gray-700 pt-4 mt-8">
+        This content is for informational purposes only and does not constitute medical advice. Consult a healthcare provider before starting any supplement.
+      </p>
+    </div>
+  </article>
+</Base>

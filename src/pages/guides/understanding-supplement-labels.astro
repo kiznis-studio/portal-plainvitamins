@@ -1,0 +1,147 @@
+---
+export const prerender = false;
+import Base from '../../layouts/Base.astro';
+
+const faqItems = [
+  {
+    q: 'What does "% Daily Value" mean on a supplement label?',
+    a: 'Percent Daily Value (%DV) tells you how much of a nutrient a single serving provides relative to the recommended daily intake for an average adult eating 2,000 calories per day. A %DV of 100% means one serving supplies the full daily reference amount. Values above 100% are common in supplements — for example, many vitamin B12 products list 1,000% or more. These reference values, set by FDA, are a general guide and not personalized recommendations.',
+  },
+  {
+    q: 'How is a Supplement Facts panel different from a Nutrition Facts panel?',
+    a: 'Supplement Facts panels (required on dietary supplements) list active ingredients with their amounts per serving and %DV, plus other ingredients (inactive excipients, binders, fillers). Nutrition Facts panels (required on food) include calories, macronutrients, and selected micronutrients. Supplement panels are not required to list calories unless the product contains a meaningful caloric contribution. The serving size unit also differs — supplements often use "capsules" or "tablets" while foods use grams or milliliters.',
+  },
+  {
+    q: 'What does "Other Ingredients" mean on a supplement label?',
+    a: '"Other Ingredients" lists inactive components — binders, fillers, flow agents, coating materials, flavors, and preservatives used in manufacturing. Examples include magnesium stearate (flow agent), silicon dioxide (anti-caking), hypromellose (capsule shell), rice bran (filler), and natural flavors. These ingredients are generally recognized as safe (GRAS) at the amounts used, but consumers with specific allergies or sensitivities should review this section carefully.',
+  },
+  {
+    q: 'What does "proprietary blend" mean and why is it a concern?',
+    a: 'A proprietary blend is a mixture of ingredients listed as a group under one name (e.g., "Energy Matrix") with only the total blend weight disclosed — not the individual amounts of each ingredient inside the blend. This means you cannot verify how much of each active ingredient you are actually getting. The NIH DSLD records whether products use proprietary blends. When comparing products, those with fully disclosed ingredient amounts are easier to evaluate.',
+  },
+  {
+    q: 'What does "Serving Size" mean and why does it matter?',
+    a: 'Serving size is the manufacturer-defined unit for which all nutrient amounts and %DVs are calculated. It can be 1 capsule, 2 tablets, 1 scoop, or any other amount. Always check the serving size before comparing two products — a product with 500 mg of vitamin C per 2 capsules has the same dose as one with 250 mg per 1 capsule, but the per-serving numbers look different. Larger serving sizes also affect cost-per-dose calculations.',
+  },
+  {
+    q: 'What does "not evaluated by the FDA" mean on supplement labels?',
+    a: 'The standard disclaimer — "These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease" — is legally required on all supplements making structure/function claims. It signals that the manufacturer has not submitted clinical evidence to the FDA proving the product does what it claims. Unlike prescription drugs, supplements do not require FDA approval for efficacy before going to market.',
+  },
+];
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqItems.map(item => ({
+    "@type": "Question",
+    "name": item.q,
+    "acceptedAnswer": { "@type": "Answer", "text": item.a },
+  })),
+};
+
+const articleSchema = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "How to Read a Supplement Facts Panel",
+  "description": "A plain-language guide to understanding every element of a dietary supplement label — serving sizes, Daily Values, proprietary blends, and how supplement panels differ from food nutrition labels.",
+  "publisher": { "@type": "Organization", "name": "PlainVitamins" },
+  "url": "https://plainvitamins.com/guides/understanding-supplement-labels",
+};
+---
+
+<Base
+  title="How to Read a Supplement Facts Panel — PlainVitamins"
+  description="A plain-language guide to every element of a dietary supplement label — serving sizes, Daily Values, proprietary blends, and how supplement facts differ from food nutrition labels."
+  breadcrumbs={[{ name: 'Home', href: '/' }, { name: 'Guides', href: '/guides/' }, { name: 'Reading Supplement Labels' }]}
+>
+  <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+
+  <article class="mx-auto max-w-3xl px-4 py-8 md:py-12">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">How to Read a Supplement Facts Panel</h1>
+    <p class="text-lg text-gray-500 dark:text-gray-400 mb-8">A plain-language breakdown of every element on a dietary supplement label — from serving sizes and Daily Values to proprietary blends and inactive ingredients.</p>
+
+    <div class="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 mb-8">
+      <p class="font-semibold text-amber-800 dark:text-amber-200 mb-1">Key Takeaway</p>
+      <p class="text-sm text-amber-700 dark:text-amber-300">
+        Supplement Facts panels are regulated by FDA but differ significantly from food Nutrition Facts. The most important things to check: serving size (affects all amounts), whether ingredients are fully disclosed or hidden in a proprietary blend, and the %DV relative to your actual needs. The NIH DSLD records standardized label data for over 113,000 products, making it possible to compare disclosures across brands side by side.
+      </p>
+    </div>
+
+    <div class="prose dark:prose-invert max-w-none space-y-6">
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">The Basic Structure of a Supplement Facts Panel</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">Every dietary supplement sold in the United States must display a Supplement Facts panel under FDA regulations (21 CFR 101.36). The panel is divided into three main zones: the serving information at the top, the active ingredient table in the middle, and the "Other Ingredients" declaration at the bottom.</p>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">The serving information tells you how many servings are in the container and what one serving consists of (e.g., "2 capsules"). This is the foundation for interpreting every number that follows — all amounts are per serving, not per capsule or per gram, unless otherwise stated.</p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Reading the Active Ingredient Table</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">The main table lists each active ingredient with three pieces of information:</p>
+        <ul class="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+          <li><strong class="text-gray-900 dark:text-gray-100">Ingredient name:</strong> May include the chemical form (e.g., "Magnesium as magnesium citrate"), which affects bioavailability.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Amount per serving:</strong> Listed in milligrams (mg), micrograms (mcg/µg), international units (IU), colony-forming units (CFU for probiotics), or other appropriate units.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">% Daily Value (%DV):</strong> The percentage of the FDA's reference daily intake provided by one serving. An asterisk (*) means no daily value has been established for that ingredient.</li>
+        </ul>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">You can browse the <a href="/ingredients/" class="text-emerald-600 dark:text-emerald-400 hover:underline">ingredient database</a> to see how commonly each ingredient appears across products, and the typical dose range found in the DSLD data.</p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Supplement Facts vs. Nutrition Facts: Key Differences</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">These two panels look similar but serve different regulatory purposes:</p>
+        <ul class="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+          <li><strong class="text-gray-900 dark:text-gray-100">Label name:</strong> "Supplement Facts" (supplements) vs. "Nutrition Facts" (foods). The title is legally mandated based on product category.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Calorie disclosure:</strong> Required on food labels. Optional on supplement labels unless the product provides significant calories.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Ingredient source:</strong> Supplement panels may note the plant part or source (e.g., "Elderberry extract [fruit]"), which food labels do not require.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">%DV reference:</strong> Both use FDA daily values, but supplements may list nutrients not tracked in food labels (e.g., specific botanical compounds).</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Pre-market review:</strong> Food additives require safety approval. Supplement ingredients introduced before 1994 were grandfathered; new dietary ingredients (NDIs) introduced after require an FDA notification.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Understanding Proprietary Blends</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">A proprietary blend allows a manufacturer to list a group of ingredients under a single branded name (like "Neuro Complex" or "Antioxidant Fusion") while only disclosing the total weight of the blend — not the individual amounts. This is legal under FDA rules but limits your ability to verify dosing.</p>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">The NIH DSLD records blend names and total weights for products that use them. When using PlainVitamins to <a href="/supplements/" class="text-emerald-600 dark:text-emerald-400 hover:underline">compare supplements</a>, products with fully disclosed individual ingredient amounts are generally easier to evaluate than those relying on proprietary blends.</p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">The "Other Ingredients" Section</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">Everything below the active ingredient table is listed as "Other Ingredients" — the non-active components used in manufacturing. Common examples include:</p>
+        <ul class="list-disc pl-6 space-y-1 text-gray-700 dark:text-gray-300">
+          <li><strong class="text-gray-900 dark:text-gray-100">Capsule materials:</strong> Gelatin (animal-derived) or hypromellose (vegetarian/vegan)</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Flow agents:</strong> Magnesium stearate, silicon dioxide — help capsules fill evenly</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Fillers:</strong> Microcrystalline cellulose, rice bran, dicalcium phosphate</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Coatings:</strong> Carnauba wax, shellac — used on tablets</li>
+        </ul>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">If you have specific dietary restrictions (vegan, gluten-free, soy-free), this section requires careful review. The DSLD data recorded by NIH includes other ingredient lists, which are searchable through the <a href="/brands/" class="text-emerald-600 dark:text-emerald-400 hover:underline">brand pages</a> on PlainVitamins.</p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Frequently Asked Questions</h2>
+        <div class="not-prose space-y-3">
+          {faqItems.map(item => (
+            <details class="group border border-gray-200 dark:border-gray-700 rounded-lg">
+              <summary class="cursor-pointer px-4 py-3 font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800">{item.q}</summary>
+              <p class="px-4 pb-4 text-gray-600 dark:text-gray-400 leading-relaxed">{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Sources</h2>
+        <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+          <li>NIH Office of Dietary Supplements — Dietary Supplement Label Database (DSLD)</li>
+          <li>FDA — 21 CFR Part 101.36: Nutrition labeling of dietary supplements</li>
+          <li>FDA — Dietary Supplements: What You Need to Know (fda.gov)</li>
+          <li>NIH ODS — Dietary Supplement Fact Sheets (ods.od.nih.gov)</li>
+        </ul>
+      </section>
+
+      <p class="text-xs italic text-gray-500 border-t border-gray-200 dark:border-gray-700 pt-4 mt-8">
+        This content is for informational purposes only and does not constitute medical advice. Consult a healthcare provider before starting any supplement.
+      </p>
+    </div>
+  </article>
+</Base>

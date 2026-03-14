@@ -1,0 +1,151 @@
+---
+export const prerender = false;
+import Base from '../../layouts/Base.astro';
+
+const faqItems = [
+  {
+    q: 'Does the FDA approve dietary supplements before they go on sale?',
+    a: 'No. Unlike prescription drugs, dietary supplements do not require FDA pre-market approval for safety or efficacy. Manufacturers are responsible for ensuring their products are safe before selling them. The FDA can take action after a product is on the market if it is found to be unsafe or if its labeling is misleading. This is a fundamental difference from pharmaceuticals, where extensive clinical trials and FDA review are required before approval.',
+  },
+  {
+    q: 'What does "GMP certified" mean for supplements?',
+    a: 'Good Manufacturing Practices (GMP) are FDA regulations (21 CFR Part 111) requiring supplement manufacturers to follow quality control standards — proper testing, cleanliness, equipment maintenance, and record-keeping. GMP compliance means a manufacturer follows production standards, but it does not validate product efficacy or guarantee that label claims are accurate. Third-party GMP certification (from NSF, NPA, or similar bodies) means an independent auditor has verified compliance.',
+  },
+  {
+    q: 'What is a "new dietary ingredient" (NDI) notification?',
+    a: 'Any ingredient not marketed in the U.S. before October 15, 1994 (the date DSHEA was enacted) is considered a new dietary ingredient. Manufacturers must notify the FDA at least 75 days before marketing a product containing an NDI and provide evidence of safety. Many ingredients were already in use before 1994 and were grandfathered in without safety review. The DSLD tracks ingredient names, and the NIH ODS maintains records of NDI notifications.',
+  },
+  {
+    q: 'What is the DSHEA and why does it matter?',
+    a: 'The Dietary Supplement Health and Education Act (DSHEA), passed in 1994, defined dietary supplements as a separate regulatory category from foods and drugs. It shifted the burden of proof for safety from manufacturers to the FDA — meaning the FDA must prove a supplement is unsafe rather than manufacturers proving it is safe before marketing. DSHEA also established the Supplement Facts panel requirement and limited what health claims manufacturers can make without FDA approval.',
+  },
+  {
+    q: 'What are structure/function claims and how are they different from health claims?',
+    a: 'Structure/function claims describe the role of an ingredient in normal body function (e.g., "Calcium supports strong bones" or "Vitamin C supports immune health"). These are permitted without FDA approval but must be accompanied by the disclaimer "This statement has not been evaluated by the FDA." Authorized health claims, by contrast, are FDA-approved statements linking a nutrient to reduced disease risk, based on significant scientific agreement. Disease claims (implying a supplement treats or cures a condition) are not permitted on supplements.',
+  },
+  {
+    q: 'How can I check whether a supplement has been recalled?',
+    a: 'The FDA maintains a public recall database at fda.gov/safety/recalls-market-withdrawals-safety-alerts. Supplement recalls are relatively common — often due to contamination, undisclosed ingredients (including pharmaceutical drugs), or label inaccuracies. You can also check the NIH DSLD data available through PlainVitamins to see whether a product is listed as currently on market or discontinued. For active safety alerts, check PlainRecalls at plainrecalls.com, which aggregates FDA recall data.',
+  },
+];
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqItems.map(item => ({
+    "@type": "Question",
+    "name": item.q,
+    "acceptedAnswer": { "@type": "Answer", "text": item.a },
+  })),
+};
+
+const articleSchema = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Supplement Safety Basics: What FDA Oversight Really Covers",
+  "description": "How the FDA regulates dietary supplements versus prescription drugs, what DSHEA means for consumers, and what the NIH DSLD data reveals about industry practices.",
+  "publisher": { "@type": "Organization", "name": "PlainVitamins" },
+  "url": "https://plainvitamins.com/guides/supplement-safety-basics",
+};
+---
+
+<Base
+  title="Supplement Safety Basics: What FDA Oversight Really Covers — PlainVitamins"
+  description="How the FDA regulates dietary supplements versus drugs, what DSHEA means for consumers, quality concerns, and what the NIH DSLD data reveals about the supplement industry."
+  breadcrumbs={[{ name: 'Home', href: '/' }, { name: 'Guides', href: '/guides/' }, { name: 'Supplement Safety Basics' }]}
+>
+  <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+
+  <article class="mx-auto max-w-3xl px-4 py-8 md:py-12">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">Supplement Safety Basics: What FDA Oversight Really Covers</h1>
+    <p class="text-lg text-gray-500 dark:text-gray-400 mb-8">How the FDA regulates dietary supplements differently from drugs, what DSHEA means for consumers, and what the NIH DSLD label database reveals about industry practices.</p>
+
+    <div class="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 mb-8">
+      <p class="font-semibold text-amber-800 dark:text-amber-200 mb-1">Key Takeaway</p>
+      <p class="text-sm text-amber-700 dark:text-amber-300">
+        Dietary supplements are regulated differently from drugs: manufacturers do not need FDA approval before selling a product. The FDA acts after the fact if a product is found unsafe. This means the burden of safety verification falls partly on consumers. Tools like the NIH Dietary Supplement Label Database — the source behind PlainVitamins — help consumers see exactly what is on a product label before purchasing. Third-party testing certifications and GMP compliance provide additional (though not exhaustive) quality signals.
+      </p>
+    </div>
+
+    <div class="prose dark:prose-invert max-w-none space-y-6">
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Supplements vs. Drugs: The Regulatory Gap</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">Prescription and over-the-counter drugs must undergo rigorous clinical trials demonstrating safety and efficacy, followed by FDA review and approval before they can be sold. The process for a new drug typically takes 10–15 years and costs hundreds of millions of dollars.</p>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">Dietary supplements operate under a fundamentally different framework established by the Dietary Supplement Health and Education Act (DSHEA) of 1994. Under DSHEA, supplements are presumed safe unless the FDA proves otherwise. Manufacturers do not submit efficacy data. They do not get pre-market approval. They are responsible for ensuring their own products are safe — and the FDA can act only after a product is already in consumers' hands.</p>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">This regulatory distinction is why supplement labels carry the disclaimer: "These statements have not been evaluated by the Food and Drug Administration."</p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">What FDA Does Regulate for Supplements</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">The FDA does exercise regulatory oversight in several important areas:</p>
+        <ul class="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+          <li><strong class="text-gray-900 dark:text-gray-100">Good Manufacturing Practices (GMP):</strong> Manufacturers must follow 21 CFR Part 111, which establishes production and quality control standards — including ingredient testing, batch records, and facility cleanliness.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Label accuracy:</strong> Label claims must not be false or misleading. The Supplement Facts panel format is regulated under 21 CFR 101.36.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Prohibited disease claims:</strong> Supplements cannot claim to diagnose, treat, cure, or prevent a disease without FDA drug approval.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">New dietary ingredient notifications:</strong> Ingredients not on the market before October 1994 require a pre-market safety notification to the FDA.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Post-market surveillance:</strong> The FDA monitors adverse event reports and can issue warnings, seizures, or recalls for unsafe products.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Common Quality Concerns the Data Reveals</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">The NIH DSLD — the dataset powering PlainVitamins — records label data as declared by manufacturers. Independent research and FDA enforcement actions have revealed several recurring quality issues in the supplement industry:</p>
+        <ul class="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+          <li><strong class="text-gray-900 dark:text-gray-100">Ingredient discrepancies:</strong> Third-party testing has found products containing significantly more or less of an ingredient than the label states. Label data alone cannot confirm actual content.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Undisclosed additives:</strong> FDA enforcement actions have found pharmaceutically active compounds in supplements marketed for weight loss, sexual enhancement, and muscle building — not disclosed on the label.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Proprietary blends obscuring doses:</strong> As covered in our <a href="/guides/understanding-supplement-labels" class="text-emerald-600 dark:text-emerald-400 hover:underline">label reading guide</a>, blends can mask individual ingredient amounts, making verification impossible from label data alone.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Contamination:</strong> Heavy metals, pesticide residues, and microbial contamination are documented concerns in raw botanical materials, particularly those sourced internationally.</li>
+        </ul>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">These concerns apply to the industry broadly. The <a href="/brands/" class="text-emerald-600 dark:text-emerald-400 hover:underline">brand database</a> on PlainVitamins shows which brands have the most products in the DSLD, which is one (limited) proxy for market presence, though not a quality measure.</p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">Third-Party Testing: What It Means</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">Third-party certification programs provide independent verification of supplement quality — beyond what the FDA requires. The major programs include:</p>
+        <ul class="list-disc pl-6 space-y-2 text-gray-700 dark:text-gray-300">
+          <li><strong class="text-gray-900 dark:text-gray-100">NSF International (NSF Certified for Sport):</strong> Tests for label accuracy, contaminants, and banned substances. Required by many professional sports organizations.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">USP Verified:</strong> United States Pharmacopeia certification confirming ingredient identity, potency, and purity meet USP standards.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">Informed Sport / Informed Choice:</strong> Batch-tested programs focused on sports supplements and banned substance absence.</li>
+          <li><strong class="text-gray-900 dark:text-gray-100">ConsumerLab.com:</strong> Independent testing with published results on whether products pass or fail label claims.</li>
+        </ul>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">Third-party certification adds meaningful assurance beyond label claims, but it is voluntary and not universal. Many reputable products are not certified, and certification programs vary in scope and rigor.</p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-3">What the DSLD Data Can and Cannot Tell You</h2>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed">The NIH Dietary Supplement Label Database records what manufacturers declare on labels — ingredient names, amounts, serving sizes, and brand information. PlainVitamins makes this data searchable across <a href="/ingredients/" class="text-emerald-600 dark:text-emerald-400 hover:underline">4,622 ingredients</a> and <a href="/supplements/" class="text-emerald-600 dark:text-emerald-400 hover:underline">113,539 products</a>.</p>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">The DSLD is useful for: verifying what a product claims to contain, comparing label doses across brands, checking whether an ingredient appears in a product, and identifying products currently on market versus discontinued.</p>
+        <p class="text-gray-700 dark:text-gray-300 leading-relaxed mt-3">The DSLD cannot confirm: whether the label is accurate (no independent testing), whether the product is safe or effective, or whether the product has received any third-party quality certification.</p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Frequently Asked Questions</h2>
+        <div class="not-prose space-y-3">
+          {faqItems.map(item => (
+            <details class="group border border-gray-200 dark:border-gray-700 rounded-lg">
+              <summary class="cursor-pointer px-4 py-3 font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800">{item.q}</summary>
+              <p class="px-4 pb-4 text-gray-600 dark:text-gray-400 leading-relaxed">{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Sources</h2>
+        <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+          <li>NIH Office of Dietary Supplements — Dietary Supplement Label Database (DSLD)</li>
+          <li>FDA — 21 CFR Part 111: Current Good Manufacturing Practice in Manufacturing, Packaging, Labeling, or Holding Operations for Dietary Supplements</li>
+          <li>Dietary Supplement Health and Education Act (DSHEA), Pub.L. 103-417, 1994</li>
+          <li>FDA — New Dietary Ingredient (NDI) Notification Process (fda.gov)</li>
+          <li>FDA — Dietary Supplement Recalls and Safety Alerts (fda.gov)</li>
+        </ul>
+      </section>
+
+      <p class="text-xs italic text-gray-500 border-t border-gray-200 dark:border-gray-700 pt-4 mt-8">
+        This content is for informational purposes only and does not constitute medical advice. Consult a healthcare provider before starting any supplement.
+      </p>
+    </div>
+  </article>
+</Base>
