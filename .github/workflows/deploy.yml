@@ -64,12 +64,17 @@ jobs:
           scp -i ~/.ssh/titan_key docker-compose.titan.yml \
             "root@${TITAN_HOST}:/opt/portals/${SLUG}/"
 
-          echo "$GHCR_TOKEN" | ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" \
-            "docker login ghcr.io -u github-actions --password-stdin"
-
-          ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" "\
-            docker pull ${IMAGE}:latest && \
+          # Single SSH session with isolated Docker config to prevent credential
+          # race conditions during concurrent deploys. Retries pull up to 3 times
+          # to handle transient containerd errors from parallel pulls.
+          echo "$GHCR_TOKEN" | ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" "\
+            DCFG=\$(mktemp -d) && \
+            docker --config \$DCFG login ghcr.io -u github-actions --password-stdin && \
+            for i in 1 2 3; do \
+              docker --config \$DCFG pull ${IMAGE}:latest && break || \
+              { echo \"Pull attempt \$i failed, retrying in 10s...\"; sleep 10; }; \
+            done && \
+            rm -rf \$DCFG && \
             cd /opt/portals/${SLUG} && \
             docker compose -f docker-compose.titan.yml up -d && \
-            docker logout ghcr.io && \
             docker image prune -f"
