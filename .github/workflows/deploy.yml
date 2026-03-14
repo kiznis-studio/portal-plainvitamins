@@ -68,28 +68,22 @@ jobs:
           # Titan daemon.json has max-concurrent-downloads=1 to prevent overlayfs
           # race conditions at the layer level. flock wraps BOTH pull AND compose-up
           # to prevent content store races during container creation.
-          echo "$GHCR_TOKEN" | ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" bash -s -- "${SLUG}" "${IMAGE}" <<'DEPLOY_SCRIPT'
-          set -uo pipefail
-          SLUG="$1"; IMAGE="$2"
-          DCFG=$(mktemp -d); trap 'rm -rf $DCFG' EXIT
-          docker --config $DCFG login ghcr.io -u github-actions --password-stdin
-
-          DELAY=30
-          for i in 1 2 3; do
-            if flock -w 300 /tmp/titan-deploy.lock bash -c "\
-              docker --config $DCFG pull ${IMAGE}:latest && \
-              cd /opt/portals/${SLUG} && \
-              docker compose -f docker-compose.titan.yml up -d --remove-orphans"; then
-              echo "Deploy ${SLUG} succeeded (attempt $i)"
-              docker image prune -f 2>/dev/null || true
-              exit 0
-            fi
-            echo "Deploy attempt $i/3 failed for ${SLUG}, retrying in ${DELAY}s..."
-            docker image prune -f 2>/dev/null || true
-            docker rmi ${IMAGE}:latest 2>/dev/null || true
-            sleep $DELAY
-            DELAY=$((DELAY * 2))
-          done
-          echo "ERROR: Deploy failed after 3 attempts for ${SLUG}"
-          exit 1
-          DEPLOY_SCRIPT
+          echo "$GHCR_TOKEN" | ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" "\
+            DCFG=\$(mktemp -d) && \
+            docker --config \$DCFG login ghcr.io -u github-actions --password-stdin && \
+            DELAY=30 && \
+            for i in 1 2 3; do \
+              flock -w 300 /tmp/titan-deploy.lock bash -c \"\
+                docker --config \$DCFG pull ${IMAGE}:latest && \
+                cd /opt/portals/${SLUG} && \
+                docker compose -f docker-compose.titan.yml up -d --remove-orphans\" \
+              && { echo \"Deploy ${SLUG} succeeded (attempt \$i)\"; \
+                   docker image prune -f 2>/dev/null || true; \
+                   rm -rf \$DCFG; exit 0; }; \
+              echo \"Attempt \$i/3 failed, retrying in \${DELAY}s...\"; \
+              docker image prune -f 2>/dev/null || true; \
+              docker rmi ${IMAGE}:latest 2>/dev/null || true; \
+              sleep \$DELAY; DELAY=\$((DELAY * 2)); \
+            done && \
+            rm -rf \$DCFG && \
+            echo 'ERROR: Deploy failed after 3 attempts' && exit 1"
