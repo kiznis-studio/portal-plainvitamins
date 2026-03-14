@@ -16,11 +16,11 @@ function getDb() {
   return db;
 }
 
-// --- Concurrency guard (split human/bot) ---
+// --- Inflight tracking (metrics only — no rate limiting) ---
+// We don't rate-limit bots. Fast renders + CF edge cache handle the load.
+// These counters exist for /health metrics and TRM demand scoring.
 let inflightHuman = 0;
 let inflightBot = 0;
-const MAX_HUMAN_CONCURRENT = 15;
-const MAX_BOT_CONCURRENT = parseInt(process.env.MAX_BOT_CONCURRENT || '25', 10);
 
 // --- Event loop lag tracking ---
 let eventLoopLag = 0;
@@ -198,24 +198,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const ua = context.request.headers.get('user-agent') || '';
     const isBotUA = isbot(ua);
 
-    // Concurrency guard — separate limits for bots and humans
-    if (isBotUA) {
-      if (inflightBot >= MAX_BOT_CONCURRENT) {
-        return new Response('Service busy', {
-          status: 503,
-          headers: { 'Retry-After': '10', 'Cache-Control': 'no-store' },
-        });
-      }
-      inflightBot++;
-    } else {
-      if (inflightHuman >= MAX_HUMAN_CONCURRENT) {
-        return new Response('Service busy', {
-          status: 503,
-          headers: { 'Retry-After': '5', 'Cache-Control': 'no-store' },
-        });
-      }
-      inflightHuman++;
-    }
+    // Track inflight counts (for /health metrics + TRM demand scoring)
+    if (isBotUA) inflightBot++;
+    else inflightHuman++;
 
     const start = performance.now();
     try {
