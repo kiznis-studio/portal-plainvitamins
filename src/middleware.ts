@@ -95,26 +95,48 @@ let totalMisses = 0;
 function getCachedResponse(key: string): Response | null {
   const entry = responseCache.get(key);
   if (!entry) { totalMisses++; return null; }
+  // LRU: move to end (most recently used)
   responseCache.delete(key);
   entry.hits++;
   responseCache.set(key, entry);
   totalHits++;
-  // Always decompress — Caddy/CF handle client compression
-  // (pre-compressed serving causes double-compression when Caddy gzips again)
-  return new Response(gunzipSync(entry.compressed), {
-    headers: { ...entry.headers, 'X-Cache': 'HIT' },
-  });
+  try {
+    const html = gunzipSync(entry.compressed);
+    // Safety: verify decompressed content starts with HTML
+    const prefix = html.subarray(0, 15).toString();
+    if (!prefix.includes('<!') && !prefix.includes('<html')) {
+      console.error(`[cache] Corrupt entry for ${key} — purging`);
+      responseCache.delete(key);
+      return null; // Fall through to fresh render
+    }
+    return new Response(html, {
+      headers: { ...entry.headers, 'X-Cache': 'HIT' },
+    });
+  } catch (e) {
+    // Decompress failed — corrupt cache entry, purge it
+    console.error(`[cache] Decompress failed for ${key}: ${(e as Error).message}`);
+    responseCache.delete(key);
+    return null; // Fall through to fresh render
+  }
 }
 
 function cacheResponse(key: string, body: string, headers: Record<string, string>) {
+  // Only cache valid HTML responses
+  if (!body || body.length < 50 || (!body.startsWith('<!') && !body.startsWith('<html'))) {
+    return; // Don't cache empty, tiny, or non-HTML responses
+  }
   if (responseCache.has(key)) responseCache.delete(key);
   if (responseCache.size >= MAX_CACHE_ENTRIES) {
     const firstKey = responseCache.keys().next().value;
     if (firstKey) responseCache.delete(firstKey);
   }
-  const compressed = gzipSync(body, { level: 6 });
-  const { 'Content-Length': _, ...safeHeaders } = headers;
-  responseCache.set(key, { compressed, headers: safeHeaders, hits: 0, size: body.length });
+  try {
+    const compressed = gzipSync(body, { level: 6 });
+    const { 'Content-Length': _, ...safeHeaders } = headers;
+    responseCache.set(key, { compressed, headers: safeHeaders, hits: 0, size: body.length });
+  } catch {
+    // Compression failed — skip caching, not critical
+  }
 }
 
 // --- Cache stats (for health endpoint) ---
