@@ -67,14 +67,17 @@ jobs:
           # Single SSH session with isolated Docker config to prevent credential
           # race conditions during concurrent deploys. Retries pull up to 3 times
           # to handle transient containerd errors from parallel pulls.
+          # Prune is best-effort (|| true) since concurrent prunes conflict.
           echo "$GHCR_TOKEN" | ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" "\
             DCFG=\$(mktemp -d) && \
             docker --config \$DCFG login ghcr.io -u github-actions --password-stdin && \
+            pull_ok=false && \
             for i in 1 2 3; do \
-              docker --config \$DCFG pull ${IMAGE}:latest && break || \
-              { echo \"Pull attempt \$i failed, retrying in 10s...\"; sleep 10; }; \
+              docker --config \$DCFG pull ${IMAGE}:latest && { pull_ok=true; break; }; \
+              echo \"Pull attempt \$i/3 failed, retrying in 15s...\"; sleep 15; \
             done && \
             rm -rf \$DCFG && \
+            \$pull_ok || { echo 'ERROR: Pull failed after 3 attempts'; exit 1; } && \
             cd /opt/portals/${SLUG} && \
             docker compose -f docker-compose.titan.yml up -d && \
-            docker image prune -f"
+            docker image prune -f 2>/dev/null || true"
