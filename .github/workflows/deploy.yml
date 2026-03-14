@@ -4,10 +4,17 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: kiznis-studio/portal-plainvitamins
+  IMAGE: ghcr.io/${{ github.repository }}
 
 jobs:
   build-and-deploy:
@@ -16,8 +23,12 @@ jobs:
     permissions:
       contents: read
       packages: write
+
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -26,41 +37,39 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: |
-            ghcr.io/kiznis-studio/portal-plainvitamins:latest
-            ghcr.io/kiznis-studio/portal-plainvitamins:${{ github.sha }}
+          tags: ${{ env.IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
 
       - name: Deploy to Titan
         env:
           SSH_KEY: ${{ secrets.TITAN_SSH_KEY }}
           TITAN_HOST: ${{ secrets.TITAN_HOST }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ github.event.repository.name }}
         run: |
+          SLUG="${REPO_NAME#portal-}"
+
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/titan_key
           chmod 600 ~/.ssh/titan_key
           ssh-keyscan -H "$TITAN_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-          # Copy compose file to portal directory on Titan
-          ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" \
-            "mkdir -p /opt/portals/plainvitamins"
           scp -i ~/.ssh/titan_key docker-compose.titan.yml \
-            "root@${TITAN_HOST}:/opt/portals/plainvitamins/"
+            "root@${TITAN_HOST}:/opt/portals/${SLUG}/"
 
-          # Remove old container if it exists from monolith compose (one-time migration)
-          ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" \
-            'docker stop portal-plainvitamins 2>/dev/null && docker rm portal-plainvitamins 2>/dev/null || true'
-
-          # Pull image and restart with per-portal compose
           echo "$GHCR_TOKEN" | ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" \
-            'docker login ghcr.io -u github-actions --password-stdin && \
-             docker pull ghcr.io/kiznis-studio/portal-plainvitamins:latest && \
-             cd /opt/portals/plainvitamins && \
-             docker compose -f docker-compose.titan.yml up -d && \
-             docker logout ghcr.io && \
-             echo "PlainVitamins deployed at $(date)"'
+            "docker login ghcr.io -u github-actions --password-stdin"
+
+          ssh -i ~/.ssh/titan_key "root@${TITAN_HOST}" "\
+            docker pull ${IMAGE}:latest && \
+            cd /opt/portals/${SLUG} && \
+            docker compose -f docker-compose.titan.yml up -d && \
+            docker logout ghcr.io && \
+            docker image prune -f"

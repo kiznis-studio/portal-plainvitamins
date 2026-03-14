@@ -5,9 +5,22 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
+# Slim node_modules: remove docs, types, tests, source maps not needed at runtime
+RUN rm -rf node_modules/@types && \
+    find node_modules \( \
+      -name '*.md' -o -name 'LICENSE*' -o -name 'CHANGELOG*' \
+      -o -name '*.d.ts' -o -name '*.d.ts.map' -o -name '*.js.map' \
+      -o -name 'tsconfig*.json' -o -name '.npmignore' \
+      -o -name '.eslintrc*' -o -name '.prettierrc*' \
+    \) -type f -delete 2>/dev/null; \
+    find node_modules \( \
+      -name 'test' -o -name 'tests' -o -name '__tests__' \
+      -o -name '.github' -o -name 'docs' -o -name 'doc' \
+      -o -name 'example' -o -name 'examples' \
+    \) -type d -exec rm -rf {} + 2>/dev/null; true
 
 FROM node:24-slim
-RUN apt-get update && apt-get install -y libsqlite3-0 tini && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y tini && rm -rf /var/lib/apt/lists/*
 RUN addgroup --system --gid 1001 app && adduser --system --uid 1001 --ingroup app app
 WORKDIR /app
 COPY --from=builder --chown=app:app /app/dist ./dist
