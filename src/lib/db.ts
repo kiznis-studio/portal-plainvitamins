@@ -296,7 +296,13 @@ export async function warmQueryCache(db: D1Database): Promise<number> {
     getMostCommonIngredients(db),
     getTopBrands(db),
     getStats(db),
+    getAllIngredientGroups(db),
+    getAllBrands(db),
   ]);
+  // Warm ingredient groups by category (shared across ~30 category groupings)
+  const allGroups = await getAllIngredientGroups(db);
+  const categories = new Set(allGroups.map(g => g.category).filter(Boolean) as string[]);
+  await Promise.all(Array.from(categories).map(cat => getIngredientGroupsByCategory(db, cat)));
   console.log(`[cache] Warmed ${queryCache.size} queries in ${Date.now() - start}ms`);
   return queryCache.size;
 }
