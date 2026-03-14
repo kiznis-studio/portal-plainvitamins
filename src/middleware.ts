@@ -1,10 +1,11 @@
 import { defineMiddleware } from 'astro:middleware';
 import { existsSync } from 'node:fs';
+import { gzipSync, gunzipSync } from 'node:zlib';
 import { isbot } from 'isbot';
 import { createD1Adapter } from './lib/d1-adapter';
 import { warmQueryCache } from './lib/db';
 
-// --- DB initialization ---
+// --- DB initialization (single-DB template — multi-DB portals customize this section) ---
 const DATABASE_PATH = process.env.DATABASE_PATH || '/data/portal.db';
 let db: ReturnType<typeof createD1Adapter> | null = null;
 function getDb() {
@@ -15,9 +16,11 @@ function getDb() {
   return db;
 }
 
-// --- Concurrency guard ---
-let inflightRequests = 0;
-const MAX_CONCURRENT = 15;
+// --- Concurrency guard (split human/bot) ---
+let inflightHuman = 0;
+let inflightBot = 0;
+const MAX_HUMAN_CONCURRENT = 15;
+const MAX_BOT_CONCURRENT = parseInt(process.env.MAX_BOT_CONCURRENT || '25', 10);
 
 // --- Event loop lag tracking ---
 let eventLoopLag = 0;
@@ -26,6 +29,30 @@ const lagInterval = setInterval(() => {
   setImmediate(() => { eventLoopLag = performance.now() - start; });
 }, 1000);
 lagInterval.unref();
+
+// --- Rolling demand metrics (15s window) ---
+interface RequestSample { ts: number; latency: number; }
+const samples: RequestSample[] = [];
+const WINDOW_MS = 15000;
+
+function recordRequest(latencyMs: number) {
+  const now = Date.now();
+  samples.push({ ts: now, latency: latencyMs });
+  const cutoff = now - WINDOW_MS;
+  while (samples.length > 0 && samples[0].ts < cutoff) samples.shift();
+}
+
+function getRollingMetrics() {
+  const now = Date.now();
+  const cutoff = now - WINDOW_MS;
+  while (samples.length > 0 && samples[0].ts < cutoff) samples.shift();
+  if (samples.length === 0) return { requestRate: 0, avgLatency: 0 };
+  const latencySum = samples.reduce((sum, s) => sum + s.latency, 0);
+  return {
+    requestRate: Math.round(samples.length / (WINDOW_MS / 1000) * 100) / 100,
+    avgLatency: Math.round(latencySum / samples.length),
+  };
+}
 
 // --- Cache warming ---
 let cacheWarmed = false;
@@ -53,25 +80,31 @@ async function ensureWarmed(): Promise<void> {
 // Start warming immediately at module load (before first healthcheck)
 ensureWarmed();
 
-// --- LRU response cache ---
+// --- Compressed LRU response cache ---
 interface CacheEntry {
-  body: string;
+  compressed: Buffer;
   headers: Record<string, string>;
   hits: number;
+  size: number; // uncompressed size for stats
 }
 const responseCache = new Map<string, CacheEntry>();
-const MAX_CACHE_ENTRIES = parseInt(process.env.CACHE_ENTRIES || '500', 10);
+const MAX_CACHE_ENTRIES = parseInt(process.env.CACHE_ENTRIES || '5000', 10);
 let totalHits = 0;
 let totalMisses = 0;
 
-function getCachedResponse(key: string): Response | null {
+function getCachedResponse(key: string, acceptsGzip: boolean): Response | null {
   const entry = responseCache.get(key);
   if (!entry) { totalMisses++; return null; }
   responseCache.delete(key);
   entry.hits++;
   responseCache.set(key, entry);
   totalHits++;
-  return new Response(entry.body, {
+  if (acceptsGzip) {
+    return new Response(entry.compressed, {
+      headers: { ...entry.headers, 'Content-Encoding': 'gzip', 'X-Cache': 'HIT' },
+    });
+  }
+  return new Response(gunzipSync(entry.compressed), {
     headers: { ...entry.headers, 'X-Cache': 'HIT' },
   });
 }
@@ -82,9 +115,12 @@ function cacheResponse(key: string, body: string, headers: Record<string, string
     const firstKey = responseCache.keys().next().value;
     if (firstKey) responseCache.delete(firstKey);
   }
-  responseCache.set(key, { body, headers, hits: 0 });
+  const compressed = gzipSync(body, { level: 6 });
+  const { 'Content-Length': _, ...safeHeaders } = headers;
+  responseCache.set(key, { compressed, headers: safeHeaders, hits: 0, size: body.length });
 }
 
+// --- Cache stats (for health endpoint) ---
 function getCacheStats() {
   const entries: Array<{ url: string; hits: number }> = [];
   for (const [key, entry] of responseCache) {
@@ -103,12 +139,14 @@ function getCacheStats() {
   };
 }
 
-export { inflightRequests, eventLoopLag, responseCache, cacheWarmed, cacheWarmedAt, getCacheStats };
+export { inflightHuman, inflightBot, eventLoopLag, responseCache, cacheWarmed, cacheWarmedAt, getCacheStats, getRollingMetrics };
 
+// --- PORTAL-SPECIFIC: Edge TTL per path pattern ---
+// Generic regex covers all known entity paths across all portals.
+// Override per-portal in each portal's middleware copy if needed.
 function getEdgeTtl(path: string): number {
-  if (path.startsWith("/supplement/")) return 86400;
-  if (path.startsWith("/ingredient/") || path.startsWith("/brand/")) return 86400;
-  if (path.startsWith("/rankings/")) return 21600;
+  if (path.match(/^\/(provider|employer|school|facility|drug|breed|county|city|metro|state|airport|lender|system|occupation|company|chapter|product)\//)) return 86400;
+  if (path.match(/^\/(rankings|guides)\//)) return 21600;
   return 3600;
 }
 
@@ -116,6 +154,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const path = context.url.pathname;
   (context.locals as any).runtime = { env: { DB: getDb() } };
 
+  // Health endpoint: available during warming (returns warming status)
   if (path === '/health') {
     if (!cacheWarmed) {
       ensureWarmed();
@@ -127,31 +166,44 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return next();
   }
 
-  if (path.startsWith('/_astro/') || path.startsWith('/favicon')) return next();
+  if (path.startsWith('/_astro/') || path.startsWith('/favicon') || path.startsWith('/_cluster')) return next();
 
-  if (!cacheWarmed) {
-    await ensureWarmed();
-  }
+  // Block all non-health requests until cache is warmed
+  if (!cacheWarmed) await ensureWarmed();
 
   if (context.request.method === 'GET') {
     const cacheKey = path + context.url.search;
-    const cached = getCachedResponse(cacheKey);
+    const acceptsGzip = (context.request.headers.get('accept-encoding') || '').includes('gzip');
+    const cached = getCachedResponse(cacheKey, acceptsGzip);
     if (cached) return cached;
 
     const ua = context.request.headers.get('user-agent') || '';
     const isBotUA = isbot(ua);
-    if (!isBotUA && inflightRequests >= MAX_CONCURRENT) {
-      return new Response('Service busy', {
-        status: 503,
-        headers: { 'Retry-After': '5', 'Cache-Control': 'no-store' },
-      });
+
+    // Concurrency guard — separate limits for bots and humans
+    if (isBotUA) {
+      if (inflightBot >= MAX_BOT_CONCURRENT) {
+        return new Response('Service busy', {
+          status: 503,
+          headers: { 'Retry-After': '10', 'Cache-Control': 'no-store' },
+        });
+      }
+      inflightBot++;
+    } else {
+      if (inflightHuman >= MAX_HUMAN_CONCURRENT) {
+        return new Response('Service busy', {
+          status: 503,
+          headers: { 'Retry-After': '5', 'Cache-Control': 'no-store' },
+        });
+      }
+      inflightHuman++;
     }
 
-    if (!isBotUA) inflightRequests++;
     const start = performance.now();
     try {
       const response = await next();
       const elapsed = performance.now() - start;
+      recordRequest(elapsed);
       if (elapsed > 500) {
         console.warn(`[slow] ${path} ${Math.round(elapsed)}ms lag=${Math.round(eventLoopLag)}ms`);
       }
@@ -166,12 +218,22 @@ export const onRequest = defineMiddleware(async (context, next) => {
             'Cache-Control': `public, max-age=300, s-maxage=${ttl}`,
           };
           cacheResponse(cacheKey, body, headers);
+          // Serve response (compressed if client accepts)
+          if (acceptsGzip) {
+            const entry = responseCache.get(cacheKey);
+            if (entry) {
+              return new Response(entry.compressed, {
+                headers: { ...headers, 'Content-Encoding': 'gzip', 'X-Cache': 'MISS' },
+              });
+            }
+          }
           return new Response(body, { headers: { ...headers, 'X-Cache': 'MISS' } });
         }
       }
       return response;
     } finally {
-      if (!isBotUA) inflightRequests--;
+      if (isBotUA) inflightBot--;
+      else inflightHuman--;
     }
   }
 

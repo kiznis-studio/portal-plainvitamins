@@ -53,8 +53,8 @@ function applyPragmas(db: InstanceType<typeof Database>, dbPath: string) {
   else cacheSize = -4096;                           // 4MB
 
   // mmap_size: capped to fit within Docker container memory limits
-  // Cap at 128MB — larger DBs still benefit from OS page cache outside mmap
-  const MMAP_CAP = 128 * 1024 * 1024;
+  // Cap at 256MB — larger DBs still benefit from OS page cache outside mmap
+  const MMAP_CAP = 256 * 1024 * 1024;
   const mmapSize = Math.min(Math.max(fileSize, 16 * 1024 * 1024), MMAP_CAP);
 
   try {
@@ -72,11 +72,12 @@ function applyPragmas(db: InstanceType<typeof Database>, dbPath: string) {
 // Fix: copy to /tmp, convert to DELETE journal mode, use the copy.
 function openDatabase(dbPath: string): InstanceType<typeof Database> {
   try {
-    const db = new Database(dbPath, { readonly: true, fileMustExist: true });
+    const db = new Database(dbPath, { fileMustExist: true });
     // Try a simple prepare to verify the DB is usable
     db.prepare('SELECT 1').get();
-    // Try to force DELETE mode in case the DB is WAL but mount is writable
-    try { db.pragma('journal_mode = DELETE'); } catch { /* :ro mount, expected */ }
+    // Enable WAL mode for better concurrent read performance
+    try { db.pragma('journal_mode = WAL'); } catch { /* expected on truly read-only mounts */ }
+    db.pragma('query_only = ON'); // Safety: reject all SQL writes
 
     // Performance pragmas — auto-tuned to DB file size (session-level, not persisted)
     applyPragmas(db, dbPath);

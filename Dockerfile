@@ -20,12 +20,15 @@ RUN rm -rf node_modules/@types && \
     \) -type d -exec rm -rf {} + 2>/dev/null; true
 
 FROM node:24-slim
-RUN apt-get update && apt-get install -y tini && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y tini curl && rm -rf /var/lib/apt/lists/*
 RUN addgroup --system --gid 1001 app && adduser --system --uid 1001 --ingroup app app
 WORKDIR /app
 COPY --from=builder --chown=app:app /app/dist ./dist
 COPY --from=builder --chown=app:app /app/node_modules ./node_modules
 COPY --from=builder --chown=app:app /app/package.json ./
+# Copy runtime assets (fonts for OG images, etc.) — Astro SSR reads these at runtime
+COPY --from=builder --chown=app:app /app/src/assets ./src/assets
+COPY --chown=app:app cluster-entry.mjs ./
 USER app
 ENV HOST=0.0.0.0
 ENV PORT=4321
@@ -33,4 +36,4 @@ EXPOSE 4321
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD node -e "require('http').get('http://localhost:4321/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
 ENTRYPOINT ["tini", "--"]
-CMD ["node", "dist/server/entry.mjs"]
+CMD ["node", "cluster-entry.mjs"]
