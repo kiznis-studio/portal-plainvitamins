@@ -4,12 +4,16 @@ services:
     container_name: portal-plainvitamins
     restart: unless-stopped
     volumes:
-      - /opt/portals/data/sqlite/plainvitamins.db:/data/portal.db:ro
+      - /opt/portals/data/sqlite/plainvitamins.db:/data/portal.db
     environment:
       - DATABASE_PATH=/data/portal.db
       - HOST=0.0.0.0
       - PORT=4321
       - CACHE_ENTRIES=500
+      - WORKERS=1
+      - WORKERS_MAX=4
+      - MGMT_PORT=4322
+      - MAX_BOT_CONCURRENT=25
     networks:
       - portals
     mem_limit: 512m
