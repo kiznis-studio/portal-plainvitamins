@@ -39,6 +39,70 @@ const supplementSchema = JSON.stringify({
   variableMeasured: ingredients.map(ing => ing.name).slice(0, 20).join(', '),
 });
 
+// DV analysis
+const highDVIngredients = ingredients.filter(i => i.dv_pct !== null && i.dv_pct >= 100);
+const lowDVIngredients = ingredients.filter(i => i.dv_pct !== null && i.dv_pct > 0 && i.dv_pct < 100);
+const noDVIngredients = ingredients.filter(i => i.dv_pct === null || i.dv_pct === 0);
+const maxDV = ingredients.reduce((max, i) => (i.dv_pct && i.dv_pct > max) ? i.dv_pct : max, 0);
+const topIngredient = ingredients.reduce((top, i) => (i.dv_pct && (!top || i.dv_pct > (top.dv_pct || 0))) ? i : top, null as typeof ingredients[0] | null);
+
+// Group ingredients by category
+const categoryMap = new Map<string, typeof ingredients>();
+for (const ing of ingredients) {
+  const cat = ing.category || 'Other';
+  if (!categoryMap.has(cat)) categoryMap.set(cat, []);
+  categoryMap.get(cat)!.push(ing);
+}
+const categories = [...categoryMap.entries()].sort((a, b) => b[1].length - a[1].length);
+
+// Title with data
+const titleParts = [product.name];
+if (product.ingredient_count > 0) titleParts.push(`${product.ingredient_count} Ingredients`);
+if (product.brand) titleParts.push(`by ${product.brand}`);
+const pageTitle = `${titleParts[0]} — ${titleParts.slice(1).join(', ')} | PlainVitamins`;
+
+// FAQ items
+const faqItems = [
+  {
+    q: `What ingredients are in ${product.name}?`,
+    a: `${product.name} contains ${product.ingredient_count} ingredient${product.ingredient_count !== 1 ? 's' : ''}${topIngredient ? `, including ${topIngredient.name}${topIngredient.dv_pct ? ` at ${Math.round(topIngredient.dv_pct)}% Daily Value` : ''}` : ''}. ${categories.length > 1 ? `Ingredients span ${categories.length} categories: ${categories.map(c => c[0]).join(', ')}.` : ''}`,
+  },
+  {
+    q: `Who manufactures ${product.name}?`,
+    a: `${product.name} is ${product.off_market ? 'was' : 'currently'} manufactured by ${product.brand || 'an unknown manufacturer'}. It is classified as a ${typeName} supplement${product.physical_state ? ` in ${product.physical_state.toLowerCase()} form` : ''}.`,
+  },
+  {
+    q: `Is ${product.name} still available for purchase?`,
+    a: product.off_market
+      ? `According to the NIH DSLD database, ${product.name} is listed as off-market and may no longer be available for purchase.`
+      : `Yes, ${product.name} is currently listed as on-market in the NIH DSLD database.`,
+  },
+  {
+    q: `What is the serving size of ${product.name}?`,
+    a: `The serving size is ${product.serving_size || 'not specified'}${product.servings_per_container ? `, with ${product.servings_per_container} servings per container` : ''}.`,
+  },
+];
+if (highDVIngredients.length > 0) {
+  faqItems.push({
+    q: `Which ingredients in ${product.name} exceed 100% Daily Value?`,
+    a: `${highDVIngredients.length} ingredient${highDVIngredients.length !== 1 ? 's' : ''} exceed${highDVIngredients.length === 1 ? 's' : ''} 100% DV: ${highDVIngredients.slice(0, 5).map(i => `${i.name} (${Math.round(i.dv_pct!)}% DV)`).join(', ')}${highDVIngredients.length > 5 ? `, and ${highDVIngredients.length - 5} more` : ''}.`,
+  });
+}
+faqItems.push({
+  q: `Where does this ${product.name} data come from?`,
+  a: `All label data comes from the NIH Dietary Supplement Label Database (DSLD), maintained by the Office of Dietary Supplements at the National Institutes of Health. This database catalogs supplement label information for public access.`,
+});
+
+const faqSchema = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqItems.map(item => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: { '@type': 'Answer', text: item.a },
+  })),
+});
+
 const breadcrumbs = [
   { name: 'Home', href: '/' },
   { name: 'Supplements', href: '/supplements/' },
@@ -47,11 +111,12 @@ const breadcrumbs = [
 ---
 
 <Base
-  title={`${product.name} — Supplement Facts & Ingredients`}
-  description={`${product.name} by ${product.brand || 'Unknown'}. ${typeName} supplement with ${product.ingredient_count} ingredients. View full label data from the NIH DSLD.`}
+  title={pageTitle}
+  description={`${product.name} by ${product.brand || 'Unknown'}. ${typeName} supplement with ${product.ingredient_count} ingredients${highDVIngredients.length > 0 ? `, ${highDVIngredients.length} exceeding 100% DV` : ''}. Full label data from NIH DSLD.`}
   breadcrumbs={breadcrumbs}
 >
   <script type="application/ld+json" set:html={supplementSchema} />
+  <script type="application/ld+json" set:html={faqSchema} />
 
   <div class="max-w-6xl mx-auto px-4 py-8 md:py-12">
     <!-- Header -->
@@ -214,6 +279,103 @@ const breadcrumbs = [
         </div>
       </section>
     )}
+
+    <!-- Ingredient Analysis -->
+    {categories.length > 1 && (
+      <section class="mt-12">
+        <h2 class="text-xl font-semibold mb-4">Ingredient Breakdown by Category</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {categories.map(([cat, ings]) => (
+            <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5">
+              <div class="font-semibold text-sm text-[var(--color-primary)]">{cat}</div>
+              <div class="text-2xl font-bold mt-1">{ings.length}</div>
+              <div class="text-sm text-[var(--color-text-secondary)] mt-2">
+                {ings.slice(0, 3).map(i => i.name).join(', ')}{ings.length > 3 ? `, +${ings.length - 3} more` : ''}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Daily Value Coverage -->
+    {ingredients.length > 0 && (
+      <section class="mt-12">
+        <h2 class="text-xl font-semibold mb-4">Daily Value Coverage</h2>
+        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+            <div>
+              <div class="text-3xl font-bold text-[var(--color-primary)]">{highDVIngredients.length}</div>
+              <div class="text-sm text-[var(--color-text-secondary)] mt-1">Above 100% DV</div>
+            </div>
+            <div>
+              <div class="text-3xl font-bold">{lowDVIngredients.length}</div>
+              <div class="text-sm text-[var(--color-text-secondary)] mt-1">Below 100% DV</div>
+            </div>
+            <div>
+              <div class="text-3xl font-bold text-[var(--color-text-secondary)]">{noDVIngredients.length}</div>
+              <div class="text-sm text-[var(--color-text-secondary)] mt-1">No DV Established</div>
+            </div>
+          </div>
+          {maxDV > 0 && (
+            <p class="text-sm text-[var(--color-text-secondary)] mt-4 text-center">
+              Highest Daily Value: {topIngredient?.name} at {Math.round(maxDV)}% DV
+            </p>
+          )}
+        </div>
+      </section>
+    )}
+
+    <!-- Cross-Portal Data -->
+    <section class="mt-12">
+      <h2 class="text-xl font-semibold mb-4">Related Health Data</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <a href="https://plainmeds.com/" class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group" target="_blank" rel="noopener">
+          <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors">PlainMeds</div>
+          <div class="text-sm text-[var(--color-text-secondary)] mt-1">FDA drug information — check potential supplement-drug interactions</div>
+        </a>
+        <a href="https://plaindoctor.com/" class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group" target="_blank" rel="noopener">
+          <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors">PlainDoctor</div>
+          <div class="text-sm text-[var(--color-text-secondary)] mt-1">Find healthcare providers for supplement guidance</div>
+        </a>
+        <a href="https://plainrecalls.com/" class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-5 hover:border-[var(--color-primary)] transition-colors group" target="_blank" rel="noopener">
+          <div class="font-semibold group-hover:text-[var(--color-primary)] transition-colors">PlainRecalls</div>
+          <div class="text-sm text-[var(--color-text-secondary)] mt-1">Check FDA supplement recalls and safety alerts</div>
+        </a>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="mt-12">
+      <h2 class="text-xl font-semibold mb-4">Frequently Asked Questions</h2>
+      <div class="space-y-3">
+        {faqItems.map(item => (
+          <details class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl group">
+            <summary class="px-6 py-4 cursor-pointer font-medium hover:text-[var(--color-primary)] transition-colors list-none flex justify-between items-center">
+              {item.q}
+              <span class="ml-2 text-[var(--color-text-secondary)] group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div class="px-6 pb-4 text-[var(--color-text-secondary)]">{item.a}</div>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <!-- Data Sources -->
+    <section class="mt-12">
+      <h2 class="text-lg font-semibold mb-3">Data Sources & Methodology</h2>
+      <div class="text-sm text-[var(--color-text-secondary)] space-y-2">
+        <p>
+          Supplement label data sourced from the <strong>NIH Dietary Supplement Label Database (DSLD)</strong>,
+          maintained by the Office of Dietary Supplements at the National Institutes of Health.
+          The DSLD contains label information from dietary supplement products marketed in the United States.
+        </p>
+        <p>
+          Daily Value (DV) percentages are based on FDA reference amounts. Products marked "Off Market"
+          may no longer be available for purchase but their label data remains in the database for reference.
+        </p>
+      </div>
+    </section>
 
     <!-- Disclaimer -->
     <div class="mt-10 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
